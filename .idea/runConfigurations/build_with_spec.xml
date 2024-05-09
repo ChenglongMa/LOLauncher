@@ -21,8 +21,6 @@
     <option name="MODULE_MODE" value="true" />
     <option name="REDIRECT_INPUT" value="false" />
     <option name="INPUT_FILE" value="" />
-    <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="generate version file" run_configuration_type="PythonConfigurationType" />
-    </method>
+    <method v="2" />
   </configuration>
 </component>

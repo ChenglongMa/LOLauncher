@@ -170,7 +170,7 @@ def update_settings(_setting_files):
 
 if __name__ == '__main__':
     locale = "zh_CN"
-    current_version = "0.0.0"
+    current_version = "1.0.0"
     delayed_exit = False
     # Get configuration file path
     home_dir = os.path.expanduser("~")
@@ -180,7 +180,6 @@ if __name__ == '__main__':
     # Read configuration file
     config = read_json(config_filename)
     locale = config.get("Locale", locale)
-    current_version = config.get("Version", current_version)
 
     # Check for updates
     repo_name = "ChenglongMa/LoLauncher"
@@ -194,9 +193,6 @@ if __name__ == '__main__':
             ["前往下载", "继续使用该版本"])
         if decision.lower() == "前往下载":
             print("前往下载...")
-            config['Version'] = new_version
-            write_json(config_filename, config)
-            current_version = new_version
             webbrowser.open(html_url)
             sys.exit()
         else:
@@ -252,12 +248,11 @@ if __name__ == '__main__':
         "@GameClient": "请在下方填写 RiotClientServices.exe 文件路径",
         "GameClient": game_client,
         "Locale": locale,
-        "Version": current_version,
     }
     write_json(config_filename, config)
 
     if delayed_exit:
-        input("按任意键退出...")
+        input("按回车键退出...")
         sys.exit()
     else:
         delay_seconds = 5
