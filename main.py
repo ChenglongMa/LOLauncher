@@ -170,7 +170,7 @@ def update_settings(_setting_files):
 
 if __name__ == '__main__':
     locale = "zh_CN"
-    current_version = "0.0.0"
+    current_version = "1.0.0"
     delayed_exit = False
     # Get configuration file path
     home_dir = os.path.expanduser("~")
