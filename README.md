@@ -2,9 +2,11 @@
     <img src="./docs/icon.svg" alt="LOLauncher logo" width="400px">
 </div>
 
+![macOS Version](https://img.shields.io/badge/WinOS_Version-10%2B-green?logo=windows)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/ChenglongMa/LOLauncher?include_prereleases)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/ChenglongMa/LOLauncher)](https://github.com/ChenglongMa/LOLauncher/blob/main/LICENSE)
 [![youtube](https://img.shields.io/badge/参考教程-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w)
+[![Downloads](https://img.shields.io/github/downloads/ChenglongMa/LOLauncher/total)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 
 # 英雄联盟，启动！
 
