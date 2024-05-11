@@ -16,6 +16,12 @@
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是[Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard)发布后，以前的修改语言的方法已经失效。
 
+_如何您喜欢该项目，欢迎点一个⭐！_
+
+_如果您有任何问题，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。_
+
+_谢谢关注！_
+
 ## 安装并运行
 
 1. 前往 [Release 页面](https://github.com/ChenglongMa/LOLauncher/releases/latest) 下载最新版本的 [LOLauncher.zip](https://github.com/ChenglongMa/LOLauncher/releases/latest/download/LOLauncher.zip)。
