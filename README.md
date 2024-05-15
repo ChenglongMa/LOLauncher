@@ -5,14 +5,15 @@
 ![macOS Version](https://img.shields.io/badge/WinOS_Version-10%2B-green?logo=windows)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/ChenglongMa/LOLauncher?include_prereleases)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/ChenglongMa/LOLauncher)](https://github.com/ChenglongMa/LOLauncher/blob/main/LICENSE)
-[![youtube](https://img.shields.io/badge/参考教程-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w)
+[![youtube](https://img.shields.io/badge/参考教程-YouTube-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w)
+[![Bilibili](https://img.shields.io/badge/参考教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB)
 [![Downloads](https://img.shields.io/github/downloads/ChenglongMa/LOLauncher/total)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 
 # 英雄联盟，启动！
 
 * 该程序用于修改英雄联盟默认的语言为**中文**并启动游戏。
 * 当然你也可以参考 [下方手动配置章节](#手动配置) 将其改为其他语言。
-* 该程序参考 [![youtube](https://img.shields.io/badge/大神制作的视频教程-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 编写。
+* 该程序参考大神制作的视频教程 [![youtube](https://img.shields.io/badge/YouTube_版本-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 或 [![Bilibili](https://img.shields.io/badge/Bilibili_版本-white?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB) 编写。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是[Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard)发布后，以前的修改语言的方法已经失效。
 
