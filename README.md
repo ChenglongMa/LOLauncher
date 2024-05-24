@@ -1,4 +1,4 @@
-<div style="text-align:center;">
+<div style="text-align: center;">
     <img src="./docs/icon.svg" alt="LOLauncher logo" width="400px">
 </div>
 
@@ -48,4 +48,25 @@ _谢谢关注！_
 - `SettingFile`：英雄联盟的 `league_of_legends.live.product_settings.yaml` 配置文件路径。
 - `GameClient`：Riot 客户端<img src="./docs/lol_client.ico" alt="Riot 客户端 icon" width="40px">的 `RiotClientServices.exe` 文件路径。
 - `Locale`：游戏语言，例如 `zh_CN` 为中文，`en_US` 为英文。
-- **注意：路径中的 `\` 需要转义为 `\\`，或者使用 `/` （请参考以上示例）。**
+- **注意：路径中的 `\` 需要替换为 `\\`，或者使用 `/` （请参考以上示例）。**
+
+## 常见问题
+
+### 1. 程序失效，游戏语言未修改成功。
+
+**解决方案**：请尝试**登出**后，再次运行程序并重新登录游戏。
+
+**注意：请在以下对话框中单击右侧 <kbd>SIGN OUT</kbd> 按钮。**
+
+<img alt="Sign out LOL" src="./docs/sign-out.jpg" width="50%"/>
+
+### 2. 运行程序时弹出 `Windows Defender 防病毒` 警告。
+
+**解决方案**：这是由于该程序没有签名导致的。该程序代码完全开源，只是数字证书太贵了，我无力购买🥺。
+
+如果您信任该程序，请点击 `More info`（`更多信息`），然后点击 `Run anyway`（`仍要运行`）。
+
+该操作只需一次，后续不会再弹出警告。
+
+<img alt="Windows Defender" src="./docs/win-warning1.png" width="50%"/>
+<img alt="Windows Run" src="./docs/win-warning2.png" width="50%"/>
