@@ -62,7 +62,7 @@ _谢谢关注！_
 
 **注意：请在以下对话框中单击右侧 <kbd>SIGN OUT</kbd> 按钮。**
 
-<img alt="Sign out LOL" src="./docs/sign-out.jpg" width="50%"/>
+<img alt="Sign out LOL" src="./docs/sign-out.jpg" width="100%"/>
 
 ### 2. 运行程序时弹出 `Windows Defender 防病毒` 警告。
 
@@ -72,5 +72,5 @@ _谢谢关注！_
 
 该操作只需一次，后续不会再弹出警告。
 
-<img alt="Windows Defender" src="./docs/win-warning1.png" width="50%"/>
-<img alt="Windows Run" src="./docs/win-warning2.png" width="50%"/>
+<img alt="Windows Defender" src="./docs/win-warning1.png" width="80%"/>
+<img alt="Windows Run" src="./docs/win-warning2.png" width="80%"/>
