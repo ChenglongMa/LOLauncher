@@ -1,11 +1,13 @@
 import ctypes
 import json
 import os
+import stat
 import string
 import subprocess
 import sys
 import time
 import webbrowser
+from contextlib import contextmanager
 
 import easygui
 import yaml
@@ -140,46 +142,70 @@ def is_valid_settings(_settings):
     return _settings is not None and 'settings' in _settings and 'locale_data' in _settings
 
 
+@contextmanager
+def write_permission(file_path):
+    try:
+        os.chmod(file_path, stat.S_IWRITE)
+        yield
+    finally:
+        os.chmod(file_path, stat.S_IREAD)
+
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+
 def update_settings(_setting_files):
     yaml_settings = []
     _delayed_exit = False
     for setting_file in _setting_files:
-        print(f"更新设置文件: {setting_file}")
         try:
-            yaml_content = read_yaml(setting_file)
-            if not is_valid_settings(yaml_content):
-                print(f"无效文件: {setting_file}")
-                continue
-            current_locale = yaml_content['settings']['locale']
-            print(f"当前语言: {current_locale}")
-            if current_locale != locale:
-                print(f"备份文件: {setting_file}")
-                backup_file(setting_file)
-            yaml_content['settings']['locale'] = locale
-            yaml_content['locale_data']["available_locales"].append(locale)
-            yaml_content['locale_data']["default_locale"] = locale
-            yaml_settings.append(yaml_content)
-            write_yaml(setting_file, yaml_content)
-            print(f"更新设置文件成功: {setting_file}")
+            with write_permission(setting_file):
+                print(f"更新设置文件: {setting_file}")
+                yaml_content = read_yaml(setting_file)
+                if not is_valid_settings(yaml_content):
+                    print(f"无效文件: {setting_file}")
+                    continue
+                current_locale = yaml_content['settings']['locale']
+                print(f"当前语言: {current_locale}")
+                if current_locale != selected_locale:
+                    print(f"正在备份文件...")
+                    backup_file(setting_file)
+                yaml_content['settings']['locale'] = selected_locale
+                # when selected_locale is not in available_locales
+                if selected_locale not in yaml_content['locale_data']["available_locales"]:
+                    yaml_content['locale_data']["available_locales"].append(selected_locale)
+                yaml_content['locale_data']["default_locale"] = selected_locale
+                yaml_settings.append(yaml_content)
+                write_yaml(setting_file, yaml_content)
+                print(f"更新设置文件成功!")
         except Exception as e:
             print(f"更新设置文件失败: {setting_file}, error: {e}")
             _delayed_exit = True
-    print("更新设置文件完成")
     return yaml_settings, _delayed_exit
 
 
 if __name__ == '__main__':
-    locale = "zh_CN"
-    current_version = "1.0.0"
+
+    if not is_admin():
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+        sys.exit()
+
+    selected_locale = "zh_CN"
+    current_version = "1.0.1"
     delayed_exit = False
     # Get configuration file path
     home_dir = os.path.expanduser("~")
     config_dir = os.path.join(home_dir, ".lolauncher")
+    os.makedirs(config_dir, exist_ok=True)
     config_filename = os.path.join(config_dir, "config.json")
 
     # Read configuration file
     config = read_json(config_filename)
-    locale = config.get("Locale", locale)
+    selected_locale = config.get("Locale", selected_locale)
 
     # Check for updates
     repo_name = "ChenglongMa/LoLauncher"
@@ -212,7 +238,6 @@ if __name__ == '__main__':
         if not setting_files:
             print("未找到配置文件，请手动选择。")
             print(
-                # "The file usually is located at: "
                 "该文件通常位于："
                 r"[系统盘]:\ProgramData\Riot Games\Metadata\league_of_legends.live"
                 r"\league_of_legends.live.product_settings.yaml"
@@ -235,19 +260,16 @@ if __name__ == '__main__':
 
     # Start game
     print("英雄联盟，启动！")
-    game_client = game_clients[0]
+    game_client = os.path.normpath(game_clients[0])
+    subprocess.run(['explorer.exe', game_client], check=False)
 
-    args = ["--launch-product=league_of_legends", "--launch-patchline=live"]
-    subprocess.Popen([game_client] + args)
-
-    os.makedirs(config_dir, exist_ok=True)
     config = {
         "@注意": r"请使用\或/做为路径分隔符，如 C:\ProgramData 或 C:/ProgramData",
         "@SettingFile": "请在下方填写 league_of_legends.live.product_settings.yaml 文件路径",
         "SettingFile": setting_files,
         "@GameClient": "请在下方填写 RiotClientServices.exe 文件路径",
         "GameClient": game_client,
-        "Locale": locale,
+        "Locale": selected_locale,
     }
     write_json(config_filename, config)
 
