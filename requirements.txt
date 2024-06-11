@@ -1,0 +1,4 @@
+easygui>=0.98.3
+PyYAML>=6.0.1
+PyGithub>=2.3.0
+PyInstaller>=6.8.0

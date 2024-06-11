@@ -15,9 +15,9 @@
 
 # 英雄联盟，启动！
 
-* 该程序用于修改英雄联盟默认的语言为**中文**并启动游戏。
+* 该程序用于修改英雄联盟的文本语言为**简体中文**，语音为**国服语音**，并启动游戏。
 * 当然你也可以参考 [下方手动配置章节](#手动配置) 将其改为其他语言。
-* 该程序参考大神制作的视频教程 [![youtube](https://img.shields.io/badge/YouTube_版本-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 或 [![Bilibili](https://img.shields.io/badge/Bilibili_版本-white?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB) 编写。
+* 该程序参考视频教程 [![youtube](https://img.shields.io/badge/YouTube_版本-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 或 [![Bilibili](https://img.shields.io/badge/Bilibili_版本-white?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB) 编写。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
 
@@ -34,6 +34,11 @@ _谢谢关注！_
 3. 运行 `LOLauncher.exe`。
 
 该程序会自动检测英雄联盟的相关目录修改配置并启动游戏。
+
+### 注意 
+1. 该程序需要**管理员权限**运行。这是因为需要将游戏的配置文件设置为只读，以防止游戏更新后恢复默认语言。
+2. 游戏启动成功后**不需要**再次运行该程序，可按照您的习惯启动游戏。若之后游戏更新导致语言恢复，可重新运行该程序。
+3. 本程序会**自动检查更新**，如果有新版本会提示您下载。我会根据游戏的更新情况及时更新程序。
 
 > [!TIP]
 > 
@@ -70,11 +75,9 @@ _谢谢关注！_
 
 ### 1. 程序失效，游戏语言未修改成功。
 
-**解决方案**：请尝试**登出**后，再次运行程序并重新登录游戏。
+**解决方案**：您可以参考视频教程 [![youtube](https://img.shields.io/badge/YouTube_版本-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 或 [![Bilibili](https://img.shields.io/badge/Bilibili_版本-white?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB) 手动修改游戏语言。
 
-**注意：请在以下对话框中单击右侧 <kbd>SIGN OUT</kbd> 按钮。**
-
-<img alt="Sign out LOL" src="./docs/sign-out.jpg" width="100%"/>
+如果依然有问题，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。
 
 ### 2. 运行程序时弹出 `Windows Defender 防病毒` 警告。
 
