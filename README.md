@@ -17,7 +17,6 @@
 
 * 该程序用于修改英雄联盟的文本语言为**简体中文**，语音为**国服语音**，并启动游戏。
 * 当然你也可以参考 [下方手动配置章节](#手动配置) 将其改为其他语言。
-* 该程序参考视频教程 [![youtube](https://img.shields.io/badge/YouTube_版本-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w) 或 [![Bilibili](https://img.shields.io/badge/Bilibili_版本-white?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB) 编写。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
 
@@ -26,6 +25,10 @@ _如何您喜欢该项目，欢迎点一个⭐！_
 _如果您有任何问题，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。_
 
 _谢谢关注！_
+
+## 视频教程
+
+[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1hf421D7zc/)
 
 ## 安装并运行
 
