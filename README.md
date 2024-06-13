@@ -7,8 +7,8 @@
 ![macOS Version](https://img.shields.io/badge/WinOS_Version-10%2B-green?logo=windows)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/ChenglongMa/LOLauncher?include_prereleases)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/ChenglongMa/LOLauncher)](https://github.com/ChenglongMa/LOLauncher/blob/main/LICENSE)
-[![youtube](https://img.shields.io/badge/参考教程-YouTube-FF0000?logo=youtube)](https://youtu.be/gNkLY6EAsaU?si=Q-WdWD7Jt7Oyik_w)
-[![Bilibili](https://img.shields.io/badge/参考教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB)
+[![Bilibili](https://img.shields.io/badge/使用教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1hf421D7zc/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
+[![Bilibili](https://img.shields.io/badge/手动设置教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB)
 [![Downloads](https://img.shields.io/github/downloads/ChenglongMa/LOLauncher/total)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 
 </div>
@@ -16,7 +16,7 @@
 # 英雄联盟，启动！
 
 * 该程序用于修改英雄联盟的文本语言为**简体中文**，语音为**国服语音**，并启动游戏。
-* 当然你也可以参考 [下方手动配置章节](#手动配置) 将其改为其他语言。
+* 当然你也可以参考 [下方配置文件章节](#配置文件) 将其改为其他语言。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
 
@@ -28,7 +28,7 @@ _谢谢关注！_
 
 ## 视频教程
 
-[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1hf421D7zc/)
+[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1hf421D7zc/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
 
 ## 安装并运行
 
@@ -53,11 +53,11 @@ _谢谢关注！_
 > 
 > 之后进入游戏就会看到完整的翻译了 🍻
 > 
-> (比较遗憾的是, 该操作目前无法通过程序自动完成, 但是我会尽快想办法更新程序以支持该功能)
+> (比较遗憾的是, 该操作目前无法通过程序自动完成, 且下次启动会失效, 但是我会尽快想办法更新程序以支持该功能)
 
 *如果你想手动配置相关文件路径，可以参考以下文档：*
 
-## 手动配置
+## 配置文件
 
 首次运行程序后，会在`C:\Users\<你的用户名>\.lolauncher`下生成 `config.json` 文件，你可以在该文件中手动配置相关路径。
 
@@ -73,6 +73,14 @@ _谢谢关注！_
 - `GameClient`：Riot 客户端<img src="./docs/lol_client.ico" alt="Riot 客户端 icon" width="40px">的 `RiotClientServices.exe` 文件路径。
 - `Locale`：游戏语言，例如 `zh_CN` 为中文，`en_US` 为英文。
 - **注意：路径中的 `\` 需要替换为 `\\`，或者使用 `/` （请参考以上示例）。**
+
+## 声明
+
+本项目是一个用于修改英雄联盟的文本语言和语音的工具，其目的是为了提供一个更好的游戏体验。它并不修改游戏的任何核心文件或者影响游戏的任何机制，也不提供任何形式的不公平优势。
+
+与此相反，游戏作弊器通常会修改游戏的核心文件，或者以某种方式影响游戏的机制，以提供不公平的优势。这种行为不仅违反了游戏的服务条款，也破坏了游戏的公平性和玩家的游戏体验。
+
+因此，LOLauncher与游戏作弊器在本质上是完全不同的。请放心使用。🖖
 
 ## 常见问题
 
