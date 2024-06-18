@@ -12,7 +12,7 @@ $CreateVersionFileApp = Join-Path -Path $UserDirectory -ChildPath "\anaconda3\en
 & $CreateVersionFileApp metadata.yml --outfile file_version_info.txt
 
 Write-Output "Building..."
-.\venv\Scripts\pyinstaller.exe --log-level WARN --onefile --clean --icon .\icon.ico --name LOLauncher .\main.py
+.\venv\Scripts\pyinstaller.exe --log-level WARN --onefile --clean --icon .\src\assets\icon.ico --name LOLauncher .\src\main.py
 
 Write-Output "Setting Version..."
 .\venv\Scripts\pyi-set_version.exe ./file_version_info.txt ./dist/LOLauncher.exe
