@@ -2,3 +2,6 @@ easygui>=0.98.3
 PyYAML>=6.0.1
 PyGithub>=2.3.0
 PyInstaller>=6.8.0
+watchdog>=4.0.1
+pystray>=0.19.5
+pillow>=10.3.0
