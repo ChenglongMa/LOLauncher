@@ -55,15 +55,20 @@ class FileWatcher(FileSystemEventHandler):
     def __init__(self, file_path, selected_locale, msg_callback_fn=None):
         self.file_path = file_path
         self.selected_locale = selected_locale
-        self.msg_callback_fn = msg_callback_fn
+        self.msg_callback_fn = msg_callback_fn or print
         super().__init__()
 
     def on_modified(self, event):
         if event.src_path == self.file_path:
+            print(f'File {event.src_path} has been modified')
             content = read_yaml(event.src_path)
+            if not is_valid_settings(content):
+                print(f"Invalid file: {event.src_path}")
+                return
             curr_locale = content['settings']['locale']
             if curr_locale != self.selected_locale:
                 self.msg_callback_fn(f'正在将语言 {curr_locale} 更新为 {self.selected_locale} ...')
+                # print(f'Updating locale from {curr_locale} to {self.selected_locale} ...')
                 update_settings(event.src_path, self.selected_locale, self.msg_callback_fn)
 
 

@@ -9,6 +9,7 @@ from PIL import Image
 from watchdog.observers import Observer
 
 from utils import *
+from assets import get_icon
 
 
 class App:
@@ -18,7 +19,9 @@ class App:
         self.config_filename = config_filename
         self.locale_dict = {value: key for key, value in LOCALE_CODES.items()}
         self.game_client = config.get("GameClient", "")
-        self.observer = None
+        self.observer: Observer | None = None
+        self.watching = False
+        # self.watch_thread = None
 
         self.root = tk.Tk()
         self.root.title(f"{APP_NAME} v{VERSION}")
@@ -27,13 +30,12 @@ class App:
         self.control_padding = 8
         self.layout_padding = 10
 
-        self.stop_watching = tk.BooleanVar(value=False)
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
         self.position_top = int(self.screen_height / 2 - self.window_height / 2)
         self.position_right = int(self.screen_width / 2 - self.window_width / 2)
         self.root.geometry(f"{self.window_width}x{self.window_height}+{self.position_right}+{self.position_top}")
-        self.root.iconbitmap('./assets/icon.ico')
+        self.root.iconbitmap(get_icon('icon.ico'))
         self.root.minsize(self.window_width, self.window_height)
         self.root.maxsize(self.window_width + 50, self.window_height + 50)
         # self.root.resizable(False, False)
@@ -50,13 +52,13 @@ class App:
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_minimizing)
 
     def run_tray_app(self):
-        tray_app = pystray.Icon(APP_NAME, Image.open("./assets/tray_icon.png"), f"{APP_NAME} v{VERSION}",
+        tray_app = pystray.Icon(APP_NAME, Image.open(get_icon("tray_icon.png")), f"{APP_NAME} v{VERSION}",
                                 menu=pystray.Menu(
                                     pystray.MenuItem("显示主窗口", self.on_window_restoring, default=True),
                                     pystray.MenuItem("帮助", self.show_about),
                                     pystray.MenuItem("退出", self.on_window_closing)
                                 ))
-        tray_app.run()
+        tray_app.run(self.watch_file)
 
     def create_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
@@ -113,7 +115,7 @@ class App:
         self.quick_chat_groupbox.pack(fill=tk.BOTH, padx=self.layout_padding, pady=self.layout_padding)
 
     def create_launch_button(self):
-        self.image = tk.PhotoImage(file="assets/button_icon.png")
+        self.image = tk.PhotoImage(file=get_icon("button_icon.png"))
         self.launch_button = tk.Button(self.root, text="英雄联盟，启动！", image=self.image, compound=tk.LEFT,
                                        command=self.start)
         self.launch_button.pack(side=tk.BOTTOM, pady=self.layout_padding)
@@ -133,7 +135,7 @@ class App:
         pady = self.layout_padding // 2
         self.about_window = tk.Toplevel(self.root)
         self.about_window.title("关于")
-        self.about_window.iconbitmap('../icon.ico')
+        self.about_window.iconbitmap(get_icon("icon.ico"))
         self.about_window.geometry(f"+{self.position_right}+{self.position_top}")
         self.about_window.protocol("WM_DELETE_WINDOW", lambda: self.on_about_window_closing(create_tray=icon is not None))
         self.app_name_label = tk.Label(self.about_window, text=f"{APP_NAME} v{VERSION}")
@@ -185,27 +187,61 @@ class App:
         if not settings:
             messagebox.showerror("错误", "配置文件更新失败，无法启动游戏。")
             return
-        watch_thread = threading.Thread(target=self.watch_file, daemon=True)
-        watch_thread.start()
+        self.debug_thread()
         self.start_game(settings)
         self.on_window_minimizing()
 
-    def watch_file(self):
-        event_handler = FileWatcher(self.setting_file, self.selected_locale, self.update_status)
+    def debug_thread(self):
+        if self.observer is None:
+            print("Observer is None")
+        else:
+            print(f"Observer is alive: {self.observer.is_alive()}")
+
+    # def watch_file_thread(self, icon: pystray.Icon = None):
+    #     if icon is not None:
+    #         icon.visible = True
+    #
+    #     if self.observer is not None and self.observer.is_alive():
+    #         print("Stopping observer...")
+    #         self.observer.stop()
+    #         self.watch_thread.join()
+    #     self.debug_thread()
+    #
+    #     if self.watch_thread is None or not self.watch_thread.is_alive():
+    #         self.watch_thread = threading.Thread(target=self.watch_file, daemon=True)
+    #         self.watch_thread.start()
+    #     print("Watch thread started")
+    #     self.debug_thread()
+
+    def wait_for_observer_stopping(self):
+        print("Stopping observer...")
+        self.watching = False
+        if self.observer is not None and self.observer.is_alive():
+            self.observer.stop()
+            # self.observer.join()
+            print("Observer stopped")
+        self.observer = None
+
+    def watch_file(self, icon: pystray.Icon = None):
+        if icon is not None:
+            icon.visible = True
+        self.debug_thread()
+        self.wait_for_observer_stopping()
+        event_handler = FileWatcher(self.setting_file, self.selected_locale)
         self.observer = Observer()
         self.observer.schedule(event_handler, path=os.path.dirname(self.setting_file), recursive=False)
+        self.watching = True
         self.observer.start()
-
+        print(f"Watching {self.setting_file}...")
+        self.debug_thread()
         try:
-            while not self.stop_watching.get():
+            while self.watching:
                 time.sleep(1)
         except KeyboardInterrupt:
             self.observer.stop()
         except Exception as e:
             self.update_status(f"Error: {e}")
             self.observer.stop()
-        self.observer.join()
-        self.observer = None
 
     def detect_metadata_file(self):
         is_yes = tk.messagebox.askyesno("提示", "您确定要重新检测以修改已有配置？")
@@ -241,8 +277,11 @@ class App:
         self.update_status(f"语言将被设置为：{current_value}")
 
     def on_window_restoring(self, icon: pystray.Icon, item):
+        self.debug_thread()
+        self.wait_for_observer_stopping()
         icon.stop()
         self.root.after(0, self.root.deiconify)
+        self.debug_thread()
 
     def on_window_minimizing(self, event=None):
         print("Minimizing...")
@@ -251,6 +290,7 @@ class App:
         self.run_tray_app()
 
     def run(self):
+        self.debug_thread()
         self.root.mainloop()
 
     def sync_config(self):
@@ -269,11 +309,10 @@ class App:
         return self.config
 
     def on_window_closing(self, icon: pystray.Icon, item):
+        self.debug_thread()
         close = messagebox.askyesno("退出", "退出后再启动游戏时文本和语音将恢复为默认设置\n您确定要退出吗？")
         if close:
+            self.wait_for_observer_stopping()
             icon.stop()
-            if self.observer is not None:
-                self.stop_watching.set(True)
-                self.observer.stop()
             self.sync_config()
             self.root.destroy()

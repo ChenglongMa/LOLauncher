@@ -1,8 +1,7 @@
 import os
-import sys
 
 from ui import App
-from utils import read_json, check_for_updates, verify_metadata_file, read_yaml
+from utils import read_json, check_for_updates, verify_metadata_file
 
 if __name__ == '__main__':
 
