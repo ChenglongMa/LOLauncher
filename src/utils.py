@@ -14,7 +14,7 @@ import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
 
-VERSION = '1.0.2'
+VERSION = '1.1.0'
 APP_NAME = 'LOLauncher'
 REPO_NAME = 'ChenglongMa/LOLauncher'
 DEFAULT_METADATA_DIR = r"C:\ProgramData\Riot Games\Metadata\league_of_legends.live\league_of_legends.live.product_settings.yaml"
@@ -48,6 +48,16 @@ LOCALE_CODES = {
     "tr_TR": "土耳其语",
     "vi_VN": "越南语",
 }
+
+DEFAULT_QUICK_CHATS = [
+    "Hello!",
+    "/all Does anyone still not know that pressing 'd' will show the ping value?",
+    "/all glhf",
+    "/all gg",
+    "/muteself",
+    "/mute all",
+    "/remake",
+]
 
 
 class FileWatcher(FileSystemEventHandler):
@@ -295,3 +305,15 @@ def update_settings(setting_file, selected_locale, msg_callback_fn=None):
         return setting_content
     except Exception as e:
         msg_callback_fn(f"更新设置文件失败: {setting_file}, error: {e}")
+
+
+def create_quick_chat_file(config_filename):
+    file_path = config_filename if os.path.isdir(config_filename) else os.path.dirname(config_filename)
+
+    file_path = os.path.join(file_path, 'quick_chat.txt')
+    if not os.path.exists(file_path):
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write('# 设置快速聊天消息，一行一个\n')
+            f.write('# 以 "#" 开头的行将被忽略\n')
+            f.write('# 编辑完成后记得保存 :)\n\n')
+            f.writelines("\n".join(DEFAULT_QUICK_CHATS))

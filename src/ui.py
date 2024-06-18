@@ -21,7 +21,7 @@ class App:
         self.game_client = config.get("GameClient", "")
         self.observer: Observer | None = None
         self.watching = False
-        # self.watch_thread = None
+        self.watch_thread = None
 
         self.root = tk.Tk()
         self.root.title(f"{APP_NAME} v{VERSION}")
@@ -50,6 +50,7 @@ class App:
         self.root.pack_propagate(True)
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_minimizing)
+        # self.root.bind("<Map>", self.on_window_showing)
 
     def run_tray_app(self):
         tray_app = pystray.Icon(APP_NAME, Image.open(get_icon("tray_icon.png")), f"{APP_NAME} v{VERSION}",
@@ -75,7 +76,7 @@ class App:
 
     def create_locale_groupbox(self):
         self.locale_groupbox = tk.LabelFrame(self.root, text="语言设置")
-        self.locale_var = tk.StringVar()
+        self.locale_var = tk.StringVar(value=LOCALE_CODES[self.selected_locale])
         self.locale_dropdown = ttk.Combobox(self.locale_groupbox, textvariable=self.locale_var, state="readonly")
         self.locale_dropdown['values'] = list(self.locale_dict.keys())
         self.locale_dropdown.current(list(self.locale_dict.values()).index(self.selected_locale))
@@ -85,34 +86,53 @@ class App:
 
     def on_checkbox_change(self, *args):
         state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
-        self.shortcut_entry.config(state=state)
+        self.shortcut_dropdown.config(state=state)
         self.set_chat_button.config(state=state)
+        if self.quick_chat_enabled.get():
+            self.update_status("一键喊话已启用")
+            create_quick_chat_file(self.config_filename)
+        else:
+            self.update_status("一键喊话已禁用")
 
     def create_quick_chat_groupbox(self):
         self.quick_chat_groupbox = tk.LabelFrame(self.root, text="一键喊话设置")
-        self.prompt_label = tk.Label(self.quick_chat_groupbox, text="该功能正在开发中，敬请期待！", foreground="red")
-        self.prompt_label.pack(padx=self.layout_padding, pady=self.layout_padding, fill=tk.BOTH)
+        # self.prompt_label = tk.Label(self.quick_chat_groupbox, text="该功能正在开发中，敬请期待！", foreground="red")
+        # self.prompt_label.pack(padx=self.layout_padding, pady=self.layout_padding, fill=tk.BOTH)
 
-        self.quick_chat_enabled = tk.BooleanVar(value=False)
+        self.quick_chat_enabled = tk.BooleanVar(value=self.config.get("QuickChatEnabled", False))
         self.quick_chat_enabled.trace("w", self.on_checkbox_change)
         state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
-        self.quick_chat_checkbox = tk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled, state=tk.DISABLED)
+        self.quick_chat_checkbox = tk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled)  # , state=tk.DISABLED)
         self.quick_chat_checkbox.pack()
 
         self.shortcut_frame = tk.Frame(self.quick_chat_groupbox)
 
         self.shortcut_label = tk.Label(self.shortcut_frame, text="快捷键")
         self.shortcut_label.pack(side=tk.LEFT)
-        self.shortcut_var = tk.StringVar()
-        self.shortcut_entry = tk.Entry(self.shortcut_frame, state=state, textvariable=self.shortcut_var)
-        self.shortcut_var.set("`")
-        self.shortcut_entry.pack(side=tk.RIGHT)
+        self.shortcut_var = tk.StringVar(value=self.config.get("QuickChatShortcut", "`"))
+        # self.shortcut_entry = tk.Entry(self.shortcut_frame, state=state, textvariable=self.shortcut_var)
+        # self.shortcut_var.set("`")
+        # self.shortcut_entry.pack(side=tk.RIGHT)
+
+        self.shortcut_dropdown = ttk.Combobox(self.shortcut_frame, state=state, textvariable=self.shortcut_var)
+        available_shortcuts = ["`", "Alt", "Ctrl", "Shift", "Tab"]
+        self.shortcut_dropdown['values'] = available_shortcuts
+        self.shortcut_dropdown.current(available_shortcuts.index(self.shortcut_var.get()))
+        self.shortcut_dropdown.pack(side=tk.RIGHT)
+
         self.shortcut_frame.pack(padx=self.layout_padding)
 
-        self.set_chat_button = tk.Button(self.quick_chat_groupbox, text="设置喊话内容", state=state)
+        self.set_chat_button = tk.Button(self.quick_chat_groupbox, text="设置喊话内容", state=state, command=self.open_quick_chat_file)
         self.set_chat_button.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
 
         self.quick_chat_groupbox.pack(fill=tk.BOTH, padx=self.layout_padding, pady=self.layout_padding)
+
+    def open_quick_chat_file(self):
+        print("Opening quick chat file...")
+        quick_chat_file = os.path.join(os.path.dirname(self.config_filename), "quick_chat.txt")
+        if not os.path.exists(quick_chat_file):
+            create_quick_chat_file(self.config_filename)
+        subprocess.run(['notepad.exe', quick_chat_file], check=False)
 
     def create_launch_button(self):
         self.image = tk.PhotoImage(file=get_icon("button_icon.png"))
@@ -187,31 +207,9 @@ class App:
         if not settings:
             messagebox.showerror("错误", "配置文件更新失败，无法启动游戏。")
             return
-        self.debug_thread()
+
         self.start_game(settings)
         self.on_window_minimizing()
-
-    def debug_thread(self):
-        if self.observer is None:
-            print("Observer is None")
-        else:
-            print(f"Observer is alive: {self.observer.is_alive()}")
-
-    # def watch_file_thread(self, icon: pystray.Icon = None):
-    #     if icon is not None:
-    #         icon.visible = True
-    #
-    #     if self.observer is not None and self.observer.is_alive():
-    #         print("Stopping observer...")
-    #         self.observer.stop()
-    #         self.watch_thread.join()
-    #     self.debug_thread()
-    #
-    #     if self.watch_thread is None or not self.watch_thread.is_alive():
-    #         self.watch_thread = threading.Thread(target=self.watch_file, daemon=True)
-    #         self.watch_thread.start()
-    #     print("Watch thread started")
-    #     self.debug_thread()
 
     def wait_for_observer_stopping(self):
         print("Stopping observer...")
@@ -222,10 +220,15 @@ class App:
             print("Observer stopped")
         self.observer = None
 
+    def start_watch_thread(self):
+        self.wait_for_observer_stopping()
+        self.watch_thread = threading.Thread(target=self.watch_file)
+        self.watch_thread.start()
+
     def watch_file(self, icon: pystray.Icon = None):
         if icon is not None:
             icon.visible = True
-        self.debug_thread()
+
         self.wait_for_observer_stopping()
         event_handler = FileWatcher(self.setting_file, self.selected_locale)
         self.observer = Observer()
@@ -233,7 +236,7 @@ class App:
         self.watching = True
         self.observer.start()
         print(f"Watching {self.setting_file}...")
-        self.debug_thread()
+
         try:
             while self.watching:
                 time.sleep(1)
@@ -277,11 +280,16 @@ class App:
         self.update_status(f"语言将被设置为：{current_value}")
 
     def on_window_restoring(self, icon: pystray.Icon, item):
-        self.debug_thread()
         self.wait_for_observer_stopping()
         icon.stop()
         self.root.after(0, self.root.deiconify)
-        self.debug_thread()
+        self.start_watch_thread()
+
+    def on_window_showing(self, event=None):
+        if self.root.winfo_viewable():
+            print("Window is already visible")
+            return
+        print("Window is now visible", event)
 
     def on_window_minimizing(self, event=None):
         print("Minimizing...")
@@ -290,7 +298,7 @@ class App:
         self.run_tray_app()
 
     def run(self):
-        self.debug_thread()
+        self.start_watch_thread()
         self.root.mainloop()
 
     def sync_config(self):
@@ -302,14 +310,14 @@ class App:
             "GameClient": self.game_client,
             "Locale": self.selected_locale,
             "QuickChatEnabled": self.quick_chat_enabled.get(),
-            "Shortcut": self.shortcut_var.get(),
+            "QuickChatShortcut": self.shortcut_var.get(),
         }
         write_json(self.config_filename, self.config)
         print("Configuration file updated")
         return self.config
 
     def on_window_closing(self, icon: pystray.Icon, item):
-        self.debug_thread()
+
         close = messagebox.askyesno("退出", "退出后再启动游戏时文本和语音将恢复为默认设置\n您确定要退出吗？")
         if close:
             self.wait_for_observer_stopping()
