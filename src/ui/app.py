@@ -79,7 +79,7 @@ class App:
         self.setting_menu.add_command(label="自动检测游戏配置文件", command=self.detect_metadata_file)
         self.setting_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
         # self.setting_menu.add_command(label="恢复默认", command=self.reset_settings)
-        self.minimize_on_closing = tk.BooleanVar(value=True)
+        self.minimize_on_closing = tk.BooleanVar(value=self.config.get("MinimizeOnClosing", True))
         self.setting_menu.add_checkbutton(label="关闭时最小化到托盘", variable=self.minimize_on_closing)
         self.menu_bar.add_cascade(label="设置", menu=self.setting_menu)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -304,8 +304,10 @@ class App:
     def on_window_minimizing(self, event=None):
         print("Minimizing...")
         self.sync_config()
-        self.root.after(0, self.root.withdraw)
-        # self.run_tray_app()
+        if self.minimize_on_closing.get():
+            self.root.after(0, self.root.withdraw)
+        else:
+            self.on_window_closing(self.tray_app)
 
     def run(self):
         self.start_watch_thread()
@@ -323,17 +325,19 @@ class App:
             "Locale": self.selected_locale,
             "QuickChatEnabled": self.quick_chat_enabled.get(),
             "QuickChatShortcut": self.shortcut_var.get(),
+            "MinimizeOnClosing": self.minimize_on_closing.get(),
         }
         write_json(CONFIG_FILENAME, self.config)
         self.ui_config.update(self.quick_chat_dialog.ui_config)
         write_json(GUI_CONFIG_FILENAME, self.ui_config)
         print("Configuration file updated")
 
-    def on_window_closing(self, icon: pystray.Icon, item):
+    def on_window_closing(self, icon: pystray.Icon = None, item=None):
 
         close = messagebox.askyesno("退出", "退出后再启动游戏时文本和语音将恢复为默认设置\n您确定要退出吗？")
         if close:
             self.wait_for_observer_stopping()
-            icon.stop()
+            if icon:
+                icon.stop()
             self.sync_config()
-            self.root.quit()
+            self.root.after(0, self.root.destroy)
