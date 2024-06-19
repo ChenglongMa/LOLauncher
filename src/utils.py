@@ -49,6 +49,8 @@ LOCALE_CODES = {
     "vi_VN": "越南语",
 }
 
+COMMENT_PREFIX = "#"
+
 DEFAULT_QUICK_CHATS = [
     "Hello!",
     "/all Does anyone still not know that pressing 'd' will show the ping value?",
@@ -59,7 +61,15 @@ DEFAULT_QUICK_CHATS = [
     "/remake",
 ]
 
+HOME_DIR = os.path.expanduser("~")
+CONFIG_DIR = os.path.join(HOME_DIR, ".lolauncher")
+os.makedirs(CONFIG_DIR, exist_ok=True)
+CONFIG_FILENAME = os.path.join(CONFIG_DIR, "config.json")
+GUI_CONFIG_FILENAME = os.path.join(CONFIG_DIR, "gui_config.json")
+QUICK_CHAT_FILENAME = os.path.join(CONFIG_DIR, "quick_chat.txt")
 
+
+########################################################################################
 class FileWatcher(FileSystemEventHandler):
 
     def __init__(self, file_path, selected_locale, msg_callback_fn=None):
@@ -108,11 +118,15 @@ def open_my_homepage():
 
 
 def read_json(file_path):
-    if not os.path.exists(file_path):
+    try:
+        if not os.path.exists(file_path):
+            return {}
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        print(f"Error reading {file_path}: {e}")
         return {}
-    with open(file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return data
 
 
 def get_updates(repo_name, current_version):
@@ -313,7 +327,18 @@ def create_quick_chat_file(config_filename):
     file_path = os.path.join(file_path, 'quick_chat.txt')
     if not os.path.exists(file_path):
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write('# 设置快速聊天消息，一行一个\n')
-            f.write('# 以 "#" 开头的行将被忽略\n')
-            f.write('# 编辑完成后记得保存 :)\n\n')
+            f.write(f'{COMMENT_PREFIX} 设置快速聊天消息，一行一个\n')
+            f.write(f'{COMMENT_PREFIX} 以 "{COMMENT_PREFIX}" 开头的行将被忽略\n')
+            f.write(f'{COMMENT_PREFIX} 编辑完成后记得保存 :)\n\n')
             f.writelines("\n".join(DEFAULT_QUICK_CHATS))
+
+
+def go_to_previous_window():
+    # Get a handle to the foreground window
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+
+    # Get a handle to the next window in the Z order
+    next_window = ctypes.windll.user32.GetWindow(foreground_window, 2)
+
+    # Bring the next window to the foreground
+    ctypes.windll.user32.SetForegroundWindow(next_window)

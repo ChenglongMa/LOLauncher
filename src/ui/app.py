@@ -8,15 +8,16 @@ import pystray
 from PIL import Image
 from watchdog.observers import Observer
 
+from ui.quick_chat import QuickChatModal
 from utils import *
 from assets import get_icon
 
 
 class App:
-    def __init__(self, setting_file, config, config_filename):
+    def __init__(self, setting_file, config, gui_config):
         self.setting_file = setting_file
         self.config = config
-        self.config_filename = config_filename
+        self.ui_config = gui_config
         self.locale_dict = {value: key for key, value in LOCALE_CODES.items()}
         self.game_client = config.get("GameClient", "")
         self.observer: Observer | None = None
@@ -47,27 +48,40 @@ class App:
 
         self.create_status_bar()
         self.create_launch_button()
+        self.tray_app = self.create_tray_app()
+        self.tray_thread = threading.Thread(target=self.tray_app.run)
+
         self.root.pack_propagate(True)
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_window_minimizing)
         # self.root.bind("<Map>", self.on_window_showing)
+        self.quick_chat_dialog = QuickChatModal(self.root, self.config, self.ui_config)
+        self.quick_chat_dialog.set_hotkey(self.config.get("QuickChatShortcut", "`"))
 
-    def run_tray_app(self):
-        tray_app = pystray.Icon(APP_NAME, Image.open(get_icon("tray_icon.png")), f"{APP_NAME} v{VERSION}",
-                                menu=pystray.Menu(
-                                    pystray.MenuItem("显示主窗口", self.on_window_restoring, default=True),
-                                    pystray.MenuItem("帮助", self.show_about),
-                                    pystray.MenuItem("退出", self.on_window_closing)
-                                ))
-        tray_app.run(self.watch_file)
+    def create_tray_app(self):
+        return pystray.Icon(
+            APP_NAME,
+            Image.open(get_icon("tray_icon.png")),
+            f"{APP_NAME} v{VERSION}",
+            menu=self.create_tray_menu()
+        )
+
+    def create_tray_menu(self):
+        return pystray.Menu(
+            pystray.MenuItem("显示主窗口", self.on_window_restoring, default=True),
+            pystray.MenuItem("帮助", self.show_about),
+            pystray.MenuItem("退出", self.on_window_closing)
+        )
 
     def create_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
-        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.file_menu.add_command(label="自动检测游戏配置文件", command=self.detect_metadata_file)
-        self.file_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
-        # self.file_menu.add_command(label="恢复默认", command=self.reset_settings)
-        self.menu_bar.add_cascade(label="文件", menu=self.file_menu)
+        self.setting_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.setting_menu.add_command(label="自动检测游戏配置文件", command=self.detect_metadata_file)
+        self.setting_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
+        # self.setting_menu.add_command(label="恢复默认", command=self.reset_settings)
+        self.minimize_on_closing = tk.BooleanVar(value=True)
+        self.setting_menu.add_checkbutton(label="关闭时最小化到托盘", variable=self.minimize_on_closing)
+        self.menu_bar.add_cascade(label="设置", menu=self.setting_menu)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.help_menu.add_command(label="关于", command=self.show_about)
         self.help_menu.add_command(label="检查更新", command=lambda: check_for_updates(self.no_new_version_fn))
@@ -81,7 +95,7 @@ class App:
         self.locale_dropdown['values'] = list(self.locale_dict.keys())
         self.locale_dropdown.current(list(self.locale_dict.values()).index(self.selected_locale))
         self.locale_dropdown.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
-        self.locale_dropdown.bind("<<ComboboxSelected>>", self.on_dropdown_change)
+        self.locale_dropdown.bind("<<ComboboxSelected>>", self.on_locale_changed)
         self.locale_groupbox.pack(fill=tk.BOTH, padx=self.layout_padding, pady=self.layout_padding)
 
     def on_checkbox_change(self, *args):
@@ -90,7 +104,7 @@ class App:
         self.set_chat_button.config(state=state)
         if self.quick_chat_enabled.get():
             self.update_status("一键喊话已启用")
-            create_quick_chat_file(self.config_filename)
+            create_quick_chat_file(CONFIG_FILENAME)
         else:
             self.update_status("一键喊话已禁用")
 
@@ -102,7 +116,7 @@ class App:
         self.quick_chat_enabled = tk.BooleanVar(value=self.config.get("QuickChatEnabled", False))
         self.quick_chat_enabled.trace("w", self.on_checkbox_change)
         state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
-        self.quick_chat_checkbox = tk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled)  # , state=tk.DISABLED)
+        self.quick_chat_checkbox = tk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled)
         self.quick_chat_checkbox.pack()
 
         self.shortcut_frame = tk.Frame(self.quick_chat_groupbox)
@@ -110,14 +124,12 @@ class App:
         self.shortcut_label = tk.Label(self.shortcut_frame, text="快捷键")
         self.shortcut_label.pack(side=tk.LEFT)
         self.shortcut_var = tk.StringVar(value=self.config.get("QuickChatShortcut", "`"))
-        # self.shortcut_entry = tk.Entry(self.shortcut_frame, state=state, textvariable=self.shortcut_var)
-        # self.shortcut_var.set("`")
-        # self.shortcut_entry.pack(side=tk.RIGHT)
 
         self.shortcut_dropdown = ttk.Combobox(self.shortcut_frame, state=state, textvariable=self.shortcut_var)
         available_shortcuts = ["`", "Alt", "Ctrl", "Shift", "Tab"]
         self.shortcut_dropdown['values'] = available_shortcuts
         self.shortcut_dropdown.current(available_shortcuts.index(self.shortcut_var.get()))
+        self.shortcut_dropdown.bind("<<ComboboxSelected>>", self.on_shortcut_changed)
         self.shortcut_dropdown.pack(side=tk.RIGHT)
 
         self.shortcut_frame.pack(padx=self.layout_padding)
@@ -129,10 +141,9 @@ class App:
 
     def open_quick_chat_file(self):
         print("Opening quick chat file...")
-        quick_chat_file = os.path.join(os.path.dirname(self.config_filename), "quick_chat.txt")
-        if not os.path.exists(quick_chat_file):
-            create_quick_chat_file(self.config_filename)
-        subprocess.run(['notepad.exe', quick_chat_file], check=False)
+        if not os.path.exists(QUICK_CHAT_FILENAME):
+            create_quick_chat_file(CONFIG_FILENAME)
+        subprocess.run(['notepad.exe', QUICK_CHAT_FILENAME], check=False)
 
     def create_launch_button(self):
         self.image = tk.PhotoImage(file=get_icon("button_icon.png"))
@@ -149,9 +160,6 @@ class App:
         self.status_var.set(message)
 
     def show_about(self, icon=None, item=None):
-        if icon is not None:
-            icon.stop()
-
         pady = self.layout_padding // 2
         self.about_window = tk.Toplevel(self.root)
         self.about_window.title("关于")
@@ -174,8 +182,8 @@ class App:
 
     def on_about_window_closing(self, create_tray=False):
         self.about_window.destroy()
-        if create_tray:
-            self.run_tray_app()
+        # if create_tray:
+        #     self.run_tray_app()
 
     def no_new_version_fn(self):
         messagebox.showinfo("检查更新", "当前已是最新版本")
@@ -225,10 +233,7 @@ class App:
         self.watch_thread = threading.Thread(target=self.watch_file)
         self.watch_thread.start()
 
-    def watch_file(self, icon: pystray.Icon = None):
-        if icon is not None:
-            icon.visible = True
-
+    def watch_file(self):
         self.wait_for_observer_stopping()
         event_handler = FileWatcher(self.setting_file, self.selected_locale)
         self.observer = Observer()
@@ -274,16 +279,21 @@ class App:
             self.update_status(msg)
             tk.messagebox.showinfo("提示", msg)
 
-    def on_dropdown_change(self, event):
+    def on_locale_changed(self, event):
         current_value = self.locale_var.get()
         self.selected_locale = self.locale_dict[current_value]
         self.update_status(f"语言将被设置为：{current_value}")
 
+    def on_shortcut_changed(self, event):
+        current_value = self.shortcut_var.get()
+        self.update_status(f"快捷键将被设置为：{current_value}")
+        self.quick_chat_dialog.set_hotkey(current_value)
+
     def on_window_restoring(self, icon: pystray.Icon, item):
-        self.wait_for_observer_stopping()
-        icon.stop()
+        # self.wait_for_observer_stopping()
+        # icon.stop()
         self.root.after(0, self.root.deiconify)
-        self.start_watch_thread()
+        # self.start_watch_thread()
 
     def on_window_showing(self, event=None):
         if self.root.winfo_viewable():
@@ -294,12 +304,14 @@ class App:
     def on_window_minimizing(self, event=None):
         print("Minimizing...")
         self.sync_config()
-        self.root.withdraw()
-        self.run_tray_app()
+        self.root.after(0, self.root.withdraw)
+        # self.run_tray_app()
 
     def run(self):
         self.start_watch_thread()
+        self.tray_thread.start()
         self.root.mainloop()
+        self.tray_thread.join()
 
     def sync_config(self):
         self.config = {
@@ -312,9 +324,10 @@ class App:
             "QuickChatEnabled": self.quick_chat_enabled.get(),
             "QuickChatShortcut": self.shortcut_var.get(),
         }
-        write_json(self.config_filename, self.config)
+        write_json(CONFIG_FILENAME, self.config)
+        self.ui_config.update(self.quick_chat_dialog.ui_config)
+        write_json(GUI_CONFIG_FILENAME, self.ui_config)
         print("Configuration file updated")
-        return self.config
 
     def on_window_closing(self, icon: pystray.Icon, item):
 
@@ -323,4 +336,4 @@ class App:
             self.wait_for_observer_stopping()
             icon.stop()
             self.sync_config()
-            self.root.destroy()
+            self.root.quit()
