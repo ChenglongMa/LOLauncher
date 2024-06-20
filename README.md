@@ -28,7 +28,9 @@ _谢谢关注！_
 
 ## 视频教程
 
-[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1hf421D7zc/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
+_B站视频被下架了，改换 YouTube..._
+
+[![tutorial](./docs/tutorial.png)](https://youtu.be/_kph7Sua8Dw)
 
 ## 安装并运行
 
