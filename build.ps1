@@ -3,18 +3,37 @@ param (
     [switch]$Dev
 )
 
+####################################################################
+
+function Remove-Folders {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string[]]$Paths
+    )
+
+    foreach ($Path in $Paths) {
+        if (Test-Path $Path) {
+            Write-Output "Removing $Path..."
+            Remove-Item -Path $Path -Recurse -Force
+        } else {
+            Write-Output "Skipping $Path as it does not exist."
+        }
+    }
+}
+
+####################################################################
+
 Write-Output "Building LOLauncher..."
+$EnvName = "prod_venv"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 Write-Output "Cleaning Up..."
-Remove-Item -Path .\build\* -Recurse -Force
-Remove-Item -Path .\dist\* -Recurse -Force
+Remove-Folders -Paths @(".\dist", ".\build", ".\$EnvName")
 
 Write-Output "Building..."
 
 Write-Output "Creating Virtual Environment..."
-$EnvName = "prod_venv"
 
 .\venv\Scripts\python.exe -m venv $EnvName
 

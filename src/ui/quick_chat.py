@@ -7,7 +7,7 @@ import keyboard
 
 from assets import get_asset
 from ui.utils import reset_list_box_colors
-from utils import is_foreground_window, bring_to_foreground, is_running, QUICK_CHAT_FILENAME, COMMENT_PREFIX
+from utils import is_foreground_window, bring_to_foreground, is_running, QUICK_CHAT_FILENAME, COMMENT_PREFIX, send_text
 
 
 def send_text_to_lol_chat(text, lock, pid=None):
@@ -28,10 +28,7 @@ def send_text_to_lol_chat(text, lock, pid=None):
             return
 
         print(f"Sending text to pid {pid}")
-        keyboard.send('enter')
-        time.sleep(0.01)
-        keyboard.write(text)
-        keyboard.send('enter')
+        send_text(text)
 
 
 class QuickChatDialog(tk.Toplevel):

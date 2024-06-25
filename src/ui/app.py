@@ -1,5 +1,4 @@
 import threading
-import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -66,9 +65,16 @@ class App:
     def create_tray_menu(self):
         return pystray.Menu(
             pystray.MenuItem("显示主窗口", self.on_window_restoring, default=True),
+            pystray.MenuItem("一键喊话", self.set_quick_chat, checked=lambda item: self.quick_chat_enabled_setting),
             pystray.MenuItem("帮助", self.show_about),
             pystray.MenuItem("退出", self.on_window_closing)
         )
+
+    def set_quick_chat(self, icon, item):
+        print("Quick chat enabled:", item.checked)
+        current_state = self.quick_chat_enabled.get()
+        self.quick_chat_enabled.set(not current_state)
+        self.quick_chat_enabled_setting = not current_state
 
     def create_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
@@ -101,6 +107,8 @@ class App:
                                          "启用前的准备", ["已设置好", "还没有", "已设置好，不要再提醒"])
             if decision == "还没有":
                 self.quick_chat_enabled.set(False)
+                self.quick_chat_enabled_setting = False
+                self.tray_app.update_menu()
                 return
             elif decision == "已设置好，不要再提醒":
                 self.config["QuickChatNoteNotAsk"] = True
@@ -108,7 +116,9 @@ class App:
         state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
         self.shortcut_dropdown.config(state=state)
         self.set_chat_button.config(state=state)
-        if self.quick_chat_enabled.get():
+        self.quick_chat_enabled_setting = self.quick_chat_enabled.get()
+        self.tray_app.update_menu()
+        if self.quick_chat_enabled_setting:
             self.update_status("一键喊话已启用")
             create_quick_chat_file(CONFIG_FILENAME)
             self.quick_chat_dialog.set_hotkey(self.shortcut_var.get())

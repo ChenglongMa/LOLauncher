@@ -7,13 +7,15 @@ import stat
 import string
 import subprocess
 import sys
+import time
 import webbrowser
 from contextlib import contextmanager
 from ctypes import wintypes
 from tkinter import filedialog
 
 import easygui
-import pyautogui
+import keyboard
+import mouse
 import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
@@ -57,7 +59,7 @@ COMMENT_PREFIX = "#"
 
 DEFAULT_QUICK_CHATS = [
     "Hello!",
-    "/all Does anyone still not know that pressing 'd' will show the ping value?",
+    "/all press d to see your latency",
     "/all glhf",
     "/all gg",
     "/muteself",
@@ -108,7 +110,8 @@ def write_permission(file_path):
 
 def is_running(process_name):
     try:
-        output = subprocess.check_output(['tasklist', '/FI', f'ImageName eq {process_name}', '/FI', 'Status eq Running', '/FO', 'LIST']).decode()
+        commands = ['tasklist', '/FI', f'ImageName eq {process_name}', '/FI', 'Status eq Running', '/FO', 'LIST']
+        output = subprocess.check_output(commands, creationflags=subprocess.CREATE_NO_WINDOW).decode()
         match = re.search(r'PID:\s+(\d+)', output)
         if match:
             pid = int(match.group(1))
@@ -137,7 +140,7 @@ def bring_to_foreground(pid):
         if pid_window.value == pid:
             ctypes.windll.user32.SetForegroundWindow(hwnd)
             ctypes.windll.user32.SetFocus(hwnd)
-            pyautogui.click()  # Assume pid is a full screen app
+            mouse.click()  # Assume pid is a full screen app
             return False  # stop enumerating windows
         return True  # continue enumerating windows
 
@@ -457,3 +460,10 @@ def go_to_previous_window():
 
     # Bring the next window to the foreground
     ctypes.windll.user32.SetForegroundWindow(next_window)
+
+
+def send_text(text):
+    keyboard.send('enter')
+    time.sleep(0.05)
+    keyboard.write(text)
+    keyboard.send('enter')
