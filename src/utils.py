@@ -73,6 +73,7 @@ os.makedirs(CONFIG_DIR, exist_ok=True)
 CONFIG_FILENAME = os.path.join(CONFIG_DIR, "config.json")
 GUI_CONFIG_FILENAME = os.path.join(CONFIG_DIR, "gui_config.json")
 QUICK_CHAT_FILENAME = os.path.join(CONFIG_DIR, "quick_chat.txt")
+QUICK_CHAT_DOC = r"https://www.bilibili.com/read/cv35772066"
 
 
 ########################################################################################

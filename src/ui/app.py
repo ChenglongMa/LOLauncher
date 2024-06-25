@@ -105,7 +105,7 @@ class App:
         if not self.config.get("QuickChatNoteNotAsk", False) and self.quick_chat_enabled.get():
             decision = easygui.buttonbox('您是否已根据《注意事项》设置好"无边框"模式？',
                                          "启用前的准备", ["已设置好", "还没有", "已设置好，不要再提醒"])
-            if decision == "还没有":
+            if not decision or decision == "还没有":
                 self.quick_chat_enabled.set(False)
                 self.quick_chat_enabled_setting = False
                 self.tray_app.update_menu()
@@ -128,7 +128,8 @@ class App:
 
     def create_quick_chat_groupbox(self):
         self.quick_chat_groupbox = tk.LabelFrame(self.root, text="一键喊话设置")
-        self.quick_chat_warning_label = create_warning_label(self.quick_chat_groupbox, "\u26A1 使用前请仔细阅读", "注意事项", "notes.pdf")
+        self.quick_chat_doc = self.config.get("QuickChatDoc", QUICK_CHAT_DOC)
+        self.quick_chat_warning_label = create_warning_label(self.quick_chat_groupbox, "\u26A1 使用前请仔细阅读", "注意事项", self.quick_chat_doc)
         self.quick_chat_warning_label.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
         self.quick_chat_enabled_setting = self.config.get("QuickChatEnabled", False)
         self.quick_chat_enabled = tk.BooleanVar(value=self.quick_chat_enabled_setting)
@@ -157,7 +158,7 @@ class App:
 
         self.quick_chat_groupbox.pack(fill=tk.BOTH, padx=self.layout_padding, pady=self.layout_padding)
 
-        self.quick_chat_dialog = QuickChatDialog(self.root, self.config, self.ui_config)
+        self.quick_chat_dialog = QuickChatDialog(self, self.config, self.ui_config)
         if self.quick_chat_enabled_setting:
             self.quick_chat_dialog.set_hotkey(self.config.get('QuickChatShortcut', '`'))
         else:
@@ -341,10 +342,11 @@ class App:
             "@GameClient": "请在下方填写 RiotClientServices.exe 文件路径",
             "GameClient": self.game_client,
             "Locale": self.selected_locale,
+            "MinimizeOnClosing": self.minimize_on_closing.get(),
+            "Process Name": "League of Legends.exe",
             "QuickChatEnabled": self.quick_chat_enabled.get(),
             "QuickChatShortcut": self.shortcut_var.get(),
-            "MinimizeOnClosing": self.minimize_on_closing.get(),
-            "Process Name": "League of Legends.exe"
+            "QuickChatDoc": QUICK_CHAT_DOC,
         }
         self.config.update(default_config)
         self.config.update(self.quick_chat_dialog.user_config)

@@ -3,6 +3,7 @@ import threading
 import time
 import tkinter as tk
 
+import easygui
 import keyboard
 
 from assets import get_asset
@@ -32,9 +33,11 @@ def send_text_to_lol_chat(text, lock, pid=None):
 
 
 class QuickChatDialog(tk.Toplevel):
-    def __init__(self, parent, config, gui_config):
-        super().__init__(parent)
+    def __init__(self, app, config, gui_config):
+        self.parent_view = app.root
+        super().__init__(self.parent_view)
         # Config
+        self.app = app
         self.user_config = config
         self.ui_config = gui_config
         self.shortcut = None
@@ -87,7 +90,7 @@ class QuickChatDialog(tk.Toplevel):
         height = max(height, self.chat_listbox.winfo_reqheight())
         # screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        position_top = self.ui_config.get('QuickChatY', screen_height - height - 200)
+        position_top = self.ui_config.get('QuickChatY', screen_height - height - 500)
         position_top = max(0, min(position_top, screen_height - height))
         position_left = self.ui_config.get('QuickChatX', 100)
         position_left = max(0, position_left)
@@ -160,6 +163,14 @@ class QuickChatDialog(tk.Toplevel):
             self.withdraw()
         else:
             self.lol_pid = is_running(self.lol_exe_name)
+            if not self.lol_pid:
+                decision = easygui.buttonbox("游戏对局未开始，是否显示一键喊话对话框？", "提示", ["是", "取消", "关闭一键喊话"])
+                if not decision or decision == "取消":
+                    return
+                elif decision == "关闭一键喊话":
+                    self.app.quick_chat_enabled.set(False)
+                    self.disable_hotkey()
+                    return
             self.deiconify()
             self.refresh_chat_list()
 

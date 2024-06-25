@@ -2,6 +2,7 @@ import subprocess
 import tkinter as tk
 
 from assets import get_asset
+from utils import open_web
 
 
 def reset_list_box_colors(list_box, default_bg, default_fg):
@@ -9,8 +10,11 @@ def reset_list_box_colors(list_box, default_bg, default_fg):
         list_box.itemconfig(i, {'bg': default_bg, 'fg': default_fg})
 
 
-def open_asset(filename):
-    file_path = get_asset(filename)
+def open_asset(uri):
+    if uri.startswith("http"):
+        open_web(uri)
+        return
+    file_path = get_asset(uri)
     subprocess.run(['start', file_path], shell=True, check=False)
 
 
