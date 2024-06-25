@@ -1,130 +1,170 @@
 import os
+import threading
+import time
 import tkinter as tk
 
 import keyboard
 
-from assets import get_icon
-
-import time
-# import ctypes
-# from ctypes import wintypes
-
-from utils import COMMENT_PREFIX, go_to_previous_window, QUICK_CHAT_FILENAME, read_json, GUI_CONFIG_FILENAME
-
-import pyautogui
+from assets import get_asset
+from ui.utils import reset_list_box_colors
+from utils import is_foreground_window, bring_to_foreground, is_running, QUICK_CHAT_FILENAME, COMMENT_PREFIX
 
 
-def send_text_to_lol_chat(text):
-    keyboard.send('alt+tab+tab')
-    keyboard.send('enter')
-    time.sleep(0.01)
-    keyboard.write(text)
-    keyboard.send('enter')
+def send_text_to_lol_chat(text, lock, pid=None):
+    with lock:
+        if not pid:
+            print("No pid provided, program is not running.")
+            return
+        is_foreground = False
+        for _ in range(5):
+            is_foreground = is_foreground_window(pid)
+            if is_foreground:
+                break
+            bring_to_foreground(pid)
+            time.sleep(0.1)
+
+        if not is_foreground:
+            print("Program is not in foreground.")
+            return
+
+        print(f"Sending text to pid {pid}")
+        keyboard.send('enter')
+        time.sleep(0.01)
+        keyboard.write(text)
+        keyboard.send('enter')
 
 
-def send_text_to_lol_chat2(text):
-    go_to_previous_window()
-
-    pyautogui.press('enter')
-
-    # Wait for the chat box to open
-    time.sleep(0.1)
-
-    # Type the text
-    pyautogui.write(text)
-
-    # Press enter to send the message
-    pyautogui.press('enter')
-
-
-#
-# # 定义COPYDATASTRUCT结构体
-# class COPYDATASTRUCT(ctypes.Structure):
-#     _fields_ = [
-#         ('dwData', wintypes.LPARAM),
-#         ('cbData', wintypes.DWORD),
-#         ('lpData', wintypes.LPVOID)
-#     ]
-#
-#
-# # 获取SendMessage函数并设置参数类型和返回类型
-# SendMessage = ctypes.windll.user32.SendMessageW
-# SendMessage.argtypes = wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.POINTER(COPYDATASTRUCT)
-# SendMessage.restype = wintypes.LRESULT
-#
-#
-# # 定义sendMsg函数
-# def sendMsg(hwnd, msg):
-#     # 将消息转换为字节数组
-#     msg = msg.encode('utf-8')
-#     # 创建COPYDATASTRUCT实例
-#     cds = COPYDATASTRUCT(0, len(msg), ctypes.cast(msg, ctypes.c_void_p))
-#     # 调用SendMessage函数
-#     SendMessage(hwnd, 0x004A, 0, ctypes.byref(cds))  # 0x004A is the Windows message code for WM_COPYDATA
-#
-
-class QuickChatModal:
-    def __init__(self, root, config, gui_config):
-        self.shortcut = None
-        self.config = config
-        self.root = root
+class QuickChatDialog(tk.Toplevel):
+    def __init__(self, parent, config, gui_config):
+        super().__init__(parent)
+        # Config
+        self.user_config = config
         self.ui_config = gui_config
+        self.shortcut = None
+        self.lol_exe_name = self.user_config.get('Process Name', 'League of Legends.exe')
+        self.lol_pid = None
+        self.lock = threading.Lock()
 
-        self.chat_dialog = tk.Toplevel(self.root)
-        self.chat_dialog.title("一键喊话")
-        self.chat_dialog.withdraw()
+        # UI setup
+        self.default_bg = "#264C47"
+        self.default_fg = "#8F7A48"
+        self.border_color = "#927934"
+        self.border_color_inactive = "#463714"
+        self.hover_bg = "#C89B3C"
+        self.hover_fg = "#010A13"
+        # self.hover_fg = "#F0E6D2"
+        self.withdraw()  # Hide the window initially
+        self.title("一键喊话")
+        self.iconbitmap(get_asset('icon.ico'))
+        self.chat_listbox = self.create_listbox(self)
+        self.attributes('-topmost', True)
+        self.attributes('-alpha', 0.95)
+        self.config(
+            background=self.default_bg,
+            # borderwidth=10,  # DON'T use this to change border width
+            highlightthickness=3,
+            highlightcolor=self.border_color,
+            highlightbackground=self.border_color_inactive,
+            cursor='fleur',
+        )
+        # self.overrideredirect(True)
+        self.init_geometry()
 
-        self.window_width = 350
-        self.window_height = 400
-        self.control_padding = 8
-        self.layout_padding = 10
+        self.protocol("WM_DELETE_WINDOW", self.on_window_minimizing)
+        self.bind("<ButtonPress-1>", self.start_move)
+        self.bind("<ButtonRelease-1>", self.stop_move)
+        self.bind("<B1-Motion>", self.do_move)
 
-        self.screen_width = self.chat_dialog.winfo_screenwidth()
-        self.screen_height = self.chat_dialog.winfo_screenheight()
-        # print(self.chat_dialog.winfo_reqheight())
-        self.position_top = self.ui_config.get('position_top', self.screen_height - self.window_height - 200)
-        self.position_left = self.ui_config.get('position_left', 100)
+        self.bind('<Configure>', self.on_resize)
 
-        self.chat_dialog.geometry(f"{self.window_width}x{self.window_height}+{self.position_left}+{self.position_top}")
-        self.chat_dialog.iconbitmap(get_icon('icon.ico'))
-        self.chat_listbox = self.create_listbox()
+    def on_resize(self, event):
+        self.ui_config['QuickChatWidth'] = self.winfo_width()
+        self.ui_config['QuickChatHeight'] = self.winfo_height()
+        self.ui_config['QuickChatX'] = self.winfo_x()
+        self.ui_config['QuickChatY'] = self.winfo_y()
 
-        self.chat_dialog.attributes('-topmost', True)
+    def init_geometry(self):
+        width = self.ui_config.get('QuickChatWidth', 300)
+        width = max(width, 300)
+        height = self.ui_config.get('QuickChatHeight', self.chat_listbox.winfo_reqheight())
+        height = max(height, self.chat_listbox.winfo_reqheight())
+        # screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        position_top = self.ui_config.get('QuickChatY', screen_height - height - 200)
+        position_top = max(0, min(position_top, screen_height - height))
+        position_left = self.ui_config.get('QuickChatX', 100)
+        position_left = max(0, position_left)
+        self.geometry(f"{width}x{height}+{position_left}+{position_top}")
+        self.minsize(300, self.chat_listbox.winfo_reqheight())
 
-        # Hide the top level window initially
-        self.chat_dialog.withdraw()
-        self.chat_dialog.protocol("WM_DELETE_WINDOW", self.on_window_minimizing)
-        self.chat_dialog.bind('<B1-Motion>', self.dragwin)
-
-    def create_listbox(self):
-        list_box = tk.Listbox(self.chat_dialog, selectmode=tk.SINGLE, height=30, font=("Helvetica", 16))
-        list_box.pack(fill=tk.BOTH, expand=True)
-        # list_box.bind("<Double-Button-1>", lambda event: send_text_to_lol_chat(list_box.get(list_box.curselection())))
-        # list_box.bind("<Return>", lambda event: send_text_to_lol_chat(list_box.get(list_box.curselection())))
-        # list_box.bind("<Double-Button-1>", self.on_chat_text_selected)
+    def create_listbox(self, parent):
+        # NOTE: set exportselection=False to prevent the listbox from triggering the on_chat_text_selected event
+        list_box = tk.Listbox(
+            parent,
+            selectmode=tk.SINGLE,
+            font=("Helvetica", 16),
+            exportselection=False,
+            bg=self.default_bg, fg=self.default_fg,
+            highlightthickness=0,
+            borderwidth=0,
+        )
+        list_box.pack(expand=True, fill=tk.BOTH, padx=2, pady=4, anchor=tk.NW)
         list_box.bind("<<ListboxSelect>>", self.on_chat_text_selected)
+
+        list_box.bind("<Motion>", self.on_mouse_move)
+        list_box.bind("<Leave>", self.on_mouse_leave)
+
         return list_box
 
-    def on_chat_text_selected(self, event):
-        widget = event.widget
-        selection = widget.curselection()
-        value = widget.get(selection[0])
-        send_text_to_lol_chat(value)
+    def on_mouse_move(self, event):
+        list_box = event.widget
+        index = list_box.nearest(event.y)
+        if 0 <= index < list_box.size():
+            list_box.config(cursor='hand2')
+        else:
+            list_box.config(cursor='arrow')
+        reset_list_box_colors(list_box, self.default_bg, self.default_fg)
+        list_box.itemconfig(index, {'bg': self.hover_bg, 'fg': self.hover_fg})
 
-    def dragwin(self, event):
-        x = self.chat_dialog.winfo_pointerx() - self.chat_dialog.winfo_vrootx()
-        y = self.chat_dialog.winfo_pointery() - self.chat_dialog.winfo_vrooty()
-        self.chat_dialog.geometry(f"+{x}+{y}")
-        self.ui_config['position_top'] = y
-        self.ui_config['position_left'] = x
+    def on_mouse_leave(self, event):
+        list_box = event.widget
+        reset_list_box_colors(list_box, self.default_bg, self.default_fg)
+
+    def on_chat_text_selected(self, event=None):
+        self.withdraw()
+        if not self.lol_pid:
+            print("League of Legends is not running.")
+            return
+        widget = event.widget  # i.e., listbox
+        selection = widget.curselection()
+        if not selection:
+            print("No selection.")
+            return
+        selected_chat = widget.get(selection[0])
+
+        thread = threading.Thread(target=send_text_to_lol_chat, args=(selected_chat, self.lock, self.lol_pid))
+        thread.start()
+
+    def disable_hotkey(self):
+        if self.shortcut:
+            keyboard.remove_hotkey(self.shortcut)
+            self.shortcut = None
 
     def set_hotkey(self, shortcut):
-        if not shortcut:
+        if not shortcut or shortcut == self.shortcut:
             return
         if self.shortcut:
             keyboard.remove_hotkey(self.shortcut)
         self.shortcut = shortcut
         keyboard.add_hotkey(self.shortcut, self.toggle_window)
+
+    def toggle_window(self):
+        if self.winfo_viewable():
+            self.withdraw()
+        else:
+            self.lol_pid = is_running(self.lol_exe_name)
+            self.deiconify()
+            self.refresh_chat_list()
 
     def refresh_chat_list(self):
         if os.path.exists(QUICK_CHAT_FILENAME):
@@ -134,19 +174,23 @@ class QuickChatModal:
                     line = line.strip()
                     if not line.startswith(COMMENT_PREFIX) and line:
                         self.chat_listbox.insert(tk.END, line)
+            listbox_height = self.chat_listbox.size()
+            self.chat_listbox.config(height=listbox_height)
 
-    def toggle_window(self):
-        if self.chat_dialog.winfo_viewable():
-            self.chat_dialog.withdraw()
+    def do_move(self, event):
+        dx = event.x - self.x
+        dy = event.y - self.y
+        x = self.winfo_x() + dx
+        y = self.winfo_y() + dy
+        self.geometry(f"+{x}+{y}")
 
-        else:
-            self.chat_dialog.deiconify()
-            self.refresh_chat_list()
+    def start_move(self, event):
+        self.x = event.x
+        self.y = event.y
+
+    def stop_move(self, event):
+        self.x = None
+        self.y = None
 
     def on_window_minimizing(self):
-        self.chat_dialog.withdraw()
-
-    def close(self):
-        if self.shortcut:
-            keyboard.remove_hotkey(self.shortcut)
-        self.chat_dialog.destroy()
+        self.withdraw()

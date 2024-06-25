@@ -1,5 +1,3 @@
-import os
-
 from ui.app import App
 from utils import read_json, check_for_updates, verify_metadata_file, CONFIG_FILENAME, GUI_CONFIG_FILENAME
 

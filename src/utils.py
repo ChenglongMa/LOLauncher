@@ -1,15 +1,19 @@
 import ctypes
 import json
 import os
+import re
 import shutil
 import stat
 import string
+import subprocess
 import sys
 import webbrowser
 from contextlib import contextmanager
+from ctypes import wintypes
 from tkinter import filedialog
 
 import easygui
+import pyautogui
 import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
@@ -102,6 +106,105 @@ def write_permission(file_path):
         pass
 
 
+def is_running(process_name):
+    try:
+        output = subprocess.check_output(['tasklist', '/FI', f'ImageName eq {process_name}', '/FI', 'Status eq Running', '/FO', 'LIST']).decode()
+        match = re.search(r'PID:\s+(\d+)', output)
+        if match:
+            pid = int(match.group(1))
+            return pid
+    except Exception as e:
+        print(f"Error checking if {process_name} is running: {e}")
+        pass
+
+
+def is_foreground_window(pid):
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    return pid_foreground_window.value == pid
+
+
+def bring_to_foreground(pid):
+    """
+    Bring the window of the process to the front and simulate a mouse click
+    :param pid: the process ID
+    """
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            pyautogui.click()  # Assume pid is a full screen app
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    print("Bringing to front and clicking")
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
+def bring_to_front(pid):
+    """
+    Bring the window of the process to the front and set focus
+    :param pid: the process ID
+    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
+    """
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    if pid_foreground_window.value == pid:
+        # ctypes.windll.user32.SetFocus(foreground_window)
+        return True
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            # Simulate Alt key press and release
+            ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
+            ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
+def bring_to_front2(pid):
+    """
+    Bring the window of the process to the front and set focus
+    :param pid: the process ID
+    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
+    """
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    if pid_foreground_window.value == pid:
+        ctypes.windll.user32.SetFocus(foreground_window)
+        return True
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            # Attach the input processing mechanism of the foreground window's thread to our thread
+            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, True)
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            # Detach the input processing mechanism after setting the focus
+            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, False)
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -115,6 +218,10 @@ def open_repo_page():
 
 def open_my_homepage():
     webbrowser.open("https://chenglongma.com")
+
+
+def open_web(url):
+    webbrowser.open(url)
 
 
 def read_json(file_path):
@@ -302,6 +409,11 @@ def verify_metadata_file(config) -> str:
     return setting_files[0]
 
 
+def is_read_only(file_path):
+    file_stat = os.stat(file_path)
+    return not bool(file_stat.st_mode & stat.S_IWRITE)
+
+
 def update_settings(setting_file, selected_locale, msg_callback_fn=None):
     msg_callback_fn = msg_callback_fn or print
     try:
@@ -314,6 +426,9 @@ def update_settings(setting_file, selected_locale, msg_callback_fn=None):
             msg_callback_fn(f"正在备份文件...")
             backup_file(setting_file)
         setting_content['settings']['locale'] = selected_locale
+        if is_read_only(setting_file):
+            msg_callback_fn(f"文件只读，无法更新: {setting_file}")
+            return setting_content
         write_yaml(setting_file, setting_content)
         msg_callback_fn(f"更新设置文件成功!")
         return setting_content
