@@ -3,16 +3,49 @@ param (
     [switch]$Dev
 )
 
+####################################################################
+
+function Remove-Folders {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string[]]$Paths
+    )
+
+    foreach ($Path in $Paths) {
+        if (Test-Path $Path) {
+            Write-Output "Removing $Path..."
+            Remove-Item -Path $Path -Recurse -Force
+        } else {
+            Write-Output "Skipping $Path as it does not exist."
+        }
+    }
+}
+
+####################################################################
+
 Write-Output "Building LOLauncher..."
+$EnvName = "prod_venv"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$UserDirectory = $env:USERPROFILE
 
 Write-Output "Cleaning Up..."
-Remove-Item -Path .\build\* -Recurse -Force
-Remove-Item -Path .\dist\* -Recurse -Force
+Remove-Folders -Paths @(".\dist", ".\build", ".\$EnvName")
 
 Write-Output "Building..."
+
+Write-Output "Creating Virtual Environment..."
+
+.\venv\Scripts\python.exe -m venv $EnvName
+
+Write-Output "Activating Virtual Environment..."
+$ActivateScript = Join-Path -Path ".\" -ChildPath "$EnvName\Scripts\Activate.ps1"
+. $ActivateScript
+
+Write-Output "Installing Dependencies..."
+& .\$EnvName\Scripts\python.exe -m pip install --upgrade pip
+& .\$EnvName\Scripts\pip.exe install -r requirements.txt
+
+Write-Output "Building Executable..."
 
 $InstallerArgsDebug = @(
     "--noconsole",
@@ -20,6 +53,8 @@ $InstallerArgsDebug = @(
     ".\src\assets\*.png;.\assets",
     "--add-data",
     ".\src\assets\*.ico;.\assets",
+#    "--add-data",
+#    ".\src\assets\*.pdf;.\assets",
     "--paths",
     ".\src",
     "--clean",
@@ -38,11 +73,11 @@ $InstallerArgs = $InstallerArgsDebug + @(
 
 if ($Dev)
 {
-    .\venv\Scripts\pyinstaller.exe $InstallerArgsDebug
+    & .\$EnvName\Scripts\pyinstaller.exe $InstallerArgsDebug
 }
 else
 {
-    .\venv\Scripts\pyinstaller.exe $InstallerArgs
+    & .\$EnvName\Scripts\pyinstaller.exe $InstallerArgs
 }
 
 if ($Dev)
@@ -53,11 +88,10 @@ if ($Dev)
 else
 {
     Write-Output "Creating Version File..."
-    $CreateVersionFileApp = Join-Path -Path $UserDirectory -ChildPath "\anaconda3\envs\py312\Scripts\create-version-file.exe"
-    & $CreateVersionFileApp metadata.yml --outfile file_version_info.txt
+    & .\venv\Scripts\create-version-file.exe metadata.yml --outfile file_version_info.txt
 
     Write-Output "Setting Version..."
-    .\venv\Scripts\pyi-set_version.exe ./file_version_info.txt ./dist/LOLauncher.exe
+    & .\$EnvName\Scripts\pyi-set_version.exe ./file_version_info.txt ./dist/LOLauncher.exe
 
     Write-Output "Compressing Files..."
     Compress-Archive -Path .\dist\LOLauncher.exe -DestinationPath .\dist\LOLauncher.zip

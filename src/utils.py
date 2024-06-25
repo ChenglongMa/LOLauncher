@@ -1,20 +1,26 @@
 import ctypes
 import json
 import os
+import re
 import shutil
 import stat
 import string
+import subprocess
 import sys
+import time
 import webbrowser
 from contextlib import contextmanager
+from ctypes import wintypes
 from tkinter import filedialog
 
 import easygui
+import keyboard
+import mouse
 import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
 
-VERSION = '1.0.2'
+VERSION = '1.1.0'
 APP_NAME = 'LOLauncher'
 REPO_NAME = 'ChenglongMa/LOLauncher'
 DEFAULT_METADATA_DIR = r"C:\ProgramData\Riot Games\Metadata\league_of_legends.live\league_of_legends.live.product_settings.yaml"
@@ -49,7 +55,28 @@ LOCALE_CODES = {
     "vi_VN": "越南语",
 }
 
+COMMENT_PREFIX = "#"
 
+DEFAULT_QUICK_CHATS = [
+    "Hello!",
+    "/all press d to see your latency",
+    "/all glhf",
+    "/all gg",
+    "/muteself",
+    "/mute all",
+    "/remake",
+]
+
+HOME_DIR = os.path.expanduser("~")
+CONFIG_DIR = os.path.join(HOME_DIR, ".lolauncher")
+os.makedirs(CONFIG_DIR, exist_ok=True)
+CONFIG_FILENAME = os.path.join(CONFIG_DIR, "config.json")
+GUI_CONFIG_FILENAME = os.path.join(CONFIG_DIR, "gui_config.json")
+QUICK_CHAT_FILENAME = os.path.join(CONFIG_DIR, "quick_chat.txt")
+QUICK_CHAT_DOC = r"https://www.bilibili.com/read/cv35772066"
+
+
+########################################################################################
 class FileWatcher(FileSystemEventHandler):
 
     def __init__(self, file_path, selected_locale, msg_callback_fn=None):
@@ -82,6 +109,106 @@ def write_permission(file_path):
         pass
 
 
+def is_running(process_name):
+    try:
+        commands = ['tasklist', '/FI', f'ImageName eq {process_name}', '/FI', 'Status eq Running', '/FO', 'LIST']
+        output = subprocess.check_output(commands, creationflags=subprocess.CREATE_NO_WINDOW).decode()
+        match = re.search(r'PID:\s+(\d+)', output)
+        if match:
+            pid = int(match.group(1))
+            return pid
+    except Exception as e:
+        print(f"Error checking if {process_name} is running: {e}")
+        pass
+
+
+def is_foreground_window(pid):
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    return pid_foreground_window.value == pid
+
+
+def bring_to_foreground(pid):
+    """
+    Bring the window of the process to the front and simulate a mouse click
+    :param pid: the process ID
+    """
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            mouse.click()  # Assume pid is a full screen app
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    print("Bringing to front and clicking")
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
+def bring_to_front(pid):
+    """
+    Bring the window of the process to the front and set focus
+    :param pid: the process ID
+    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
+    """
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    if pid_foreground_window.value == pid:
+        # ctypes.windll.user32.SetFocus(foreground_window)
+        return True
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            # Simulate Alt key press and release
+            ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
+            ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
+def bring_to_front2(pid):
+    """
+    Bring the window of the process to the front and set focus
+    :param pid: the process ID
+    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
+    """
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+    pid_foreground_window = wintypes.DWORD()
+    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
+    if pid_foreground_window.value == pid:
+        ctypes.windll.user32.SetFocus(foreground_window)
+        return True
+
+    def enum_windows_proc(hwnd, lparam):
+        pid_window = wintypes.DWORD()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
+        if pid_window.value == pid:
+            # Attach the input processing mechanism of the foreground window's thread to our thread
+            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, True)
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+            ctypes.windll.user32.SetFocus(hwnd)
+            # Detach the input processing mechanism after setting the focus
+            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, False)
+            return False  # stop enumerating windows
+        return True  # continue enumerating windows
+
+    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
+    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
+
+
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -97,12 +224,20 @@ def open_my_homepage():
     webbrowser.open("https://chenglongma.com")
 
 
+def open_web(url):
+    webbrowser.open(url)
+
+
 def read_json(file_path):
-    if not os.path.exists(file_path):
+    try:
+        if not os.path.exists(file_path):
+            return {}
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        print(f"Error reading {file_path}: {e}")
         return {}
-    with open(file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return data
 
 
 def get_updates(repo_name, current_version):
@@ -278,6 +413,11 @@ def verify_metadata_file(config) -> str:
     return setting_files[0]
 
 
+def is_read_only(file_path):
+    file_stat = os.stat(file_path)
+    return not bool(file_stat.st_mode & stat.S_IWRITE)
+
+
 def update_settings(setting_file, selected_locale, msg_callback_fn=None):
     msg_callback_fn = msg_callback_fn or print
     try:
@@ -290,8 +430,41 @@ def update_settings(setting_file, selected_locale, msg_callback_fn=None):
             msg_callback_fn(f"正在备份文件...")
             backup_file(setting_file)
         setting_content['settings']['locale'] = selected_locale
+        if is_read_only(setting_file):
+            msg_callback_fn(f"文件只读，无法更新: {setting_file}")
+            return setting_content
         write_yaml(setting_file, setting_content)
         msg_callback_fn(f"更新设置文件成功!")
         return setting_content
     except Exception as e:
         msg_callback_fn(f"更新设置文件失败: {setting_file}, error: {e}")
+
+
+def create_quick_chat_file(config_filename):
+    file_path = config_filename if os.path.isdir(config_filename) else os.path.dirname(config_filename)
+
+    file_path = os.path.join(file_path, 'quick_chat.txt')
+    if not os.path.exists(file_path):
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(f'{COMMENT_PREFIX} 设置快速聊天消息，一行一个\n')
+            f.write(f'{COMMENT_PREFIX} 以 "{COMMENT_PREFIX}" 开头的行将被忽略\n')
+            f.write(f'{COMMENT_PREFIX} 编辑完成后记得保存 :)\n\n')
+            f.writelines("\n".join(DEFAULT_QUICK_CHATS))
+
+
+def go_to_previous_window():
+    # Get a handle to the foreground window
+    foreground_window = ctypes.windll.user32.GetForegroundWindow()
+
+    # Get a handle to the next window in the Z order
+    next_window = ctypes.windll.user32.GetWindow(foreground_window, 2)
+
+    # Bring the next window to the foreground
+    ctypes.windll.user32.SetForegroundWindow(next_window)
+
+
+def send_text(text):
+    keyboard.send('enter')
+    time.sleep(0.05)
+    keyboard.write(text)
+    keyboard.send('enter')
