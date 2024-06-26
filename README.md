@@ -44,7 +44,7 @@ _B站视频被下架了，改换 YouTube...😢_
 
 ## 版本比较
 
-| 版本号       | [v1.0.1](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.0.1) | [v1.0.2](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.0.2) | [v1.0.3](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.0.3) |
+| 版本号       | [v1.0.1](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.0.1) | [v1.0.2](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.0.2) | [v1.1.0](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.1.0) |
 |-----------|------------------------------------------------------------------------|------------------------------------------------------------------------|------------------------------------------------------------------------|
 | Win 10 适用 | ✔                                                                      | ✔                                                                      | ✔                                                                      |
 | Win 11 适用 | X                                                                      | ✔                                                                      | ✔                                                                      |
