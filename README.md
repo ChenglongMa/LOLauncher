@@ -30,7 +30,7 @@ _谢谢关注！_
 
 _B站视频被下架了，改换 YouTube...😢_
 
-[![tutorial](./docs/tutorial.png)](https://youtu.be/_kph7Sua8Dw)
+[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web)
 
 ## 安装并运行
 
