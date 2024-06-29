@@ -7,7 +7,7 @@
 ![macOS Version](https://img.shields.io/badge/WinOS_Version-10%2B-green?logo=windows)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/ChenglongMa/LOLauncher?include_prereleases)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/ChenglongMa/LOLauncher)](https://github.com/ChenglongMa/LOLauncher/blob/main/LICENSE)
-[![Bilibili](https://img.shields.io/badge/使用教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1hf421D7zc/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
+[![Bilibili](https://img.shields.io/badge/使用教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
 [![Bilibili](https://img.shields.io/badge/手动设置教程-Bilibili-1E88E5?logo=bilibili)](https://www.bilibili.com/video/BV1Zs421P7EB)
 [![Downloads](https://img.shields.io/github/downloads/ChenglongMa/LOLauncher/total)](https://github.com/ChenglongMa/LOLauncher/releases/latest)
 
@@ -16,6 +16,7 @@
 # 英雄联盟，启动！
 
 * 该程序用于修改英雄联盟的文本语言为**简体中文**，语音为**国服语音**，并启动游戏。
+* 自 [v1.1.0](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.1.0) 版本后，该程序新增 **一键喊话**。
 * 当然你也可以参考 [下方配置文件章节](#配置文件) 将其改为其他语言。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
@@ -28,7 +29,7 @@ _谢谢关注！_
 
 ## 视频教程
 
-[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web)
+[![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
 
 ## 安装并运行
 
