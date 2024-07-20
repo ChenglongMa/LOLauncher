@@ -1,6 +1,6 @@
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, font
 import sv_ttk
 
 import pystray
@@ -11,6 +11,12 @@ from assets import get_asset
 from ui.quick_chat import QuickChatDialog
 from ui.utils import create_warning_label, THEME_COLOR
 from utils import *
+
+
+def change_font(font_family):
+    for font_name in font.names():
+        _font = font.nametofont(font_name)
+        _font.config(family=font_family)
 
 
 class App:
@@ -30,9 +36,10 @@ class App:
             sv_ttk.use_dark_theme()
         else:
             sv_ttk.use_light_theme()
+        change_font("Microsoft YaHei UI")
         self.root.title(f"{APP_NAME} v{VERSION}")
         self.window_width = 350
-        self.window_height = 380
+        self.window_height = 420
         self.control_padding = 10
         self.layout_padding = 15
 
@@ -149,7 +156,7 @@ class App:
             self.quick_chat_groupbox,
             "\u26A1 使用前请仔细阅读", "注意事项",
             self.quick_chat_doc,
-            theme=sv_ttk.get_theme()
+            theme=self.theme
         )
         self.quick_chat_warning_label.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
         self.quick_chat_enabled_setting = self.config.get("QuickChatEnabled", False)
@@ -199,9 +206,11 @@ class App:
         subprocess.run(['notepad.exe', QUICK_CHAT_FILENAME], check=False)
 
     def create_launch_button(self):
+        style = ttk.Style()
+        style.configure('CustomAccent.TButton', font=('Microsoft YaHei', 16, 'bold'))
         self.image = tk.PhotoImage(file=get_asset("button_icon.png"))
         self.launch_button = ttk.Button(self.root, text="英雄联盟，启动！", image=self.image, compound=tk.LEFT,
-                                        command=self.start)
+                                        command=self.start, style="CustomAccent.TButton")
         self.launch_button.pack(side=tk.BOTTOM, pady=self.layout_padding)
 
     def create_status_bar(self):

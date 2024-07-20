@@ -55,6 +55,8 @@ $InstallerArgsDebug = @(
     ".\src\assets\*.ico;.\assets",
 #    "--add-data",
 #    ".\src\assets\*.pdf;.\assets",
+    "--collect-data",
+    "sv_ttk",
     "--paths",
     ".\src",
     "--clean",
