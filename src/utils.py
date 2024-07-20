@@ -20,11 +20,20 @@ import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 APP_NAME = 'LOLauncher'
 REPO_NAME = 'ChenglongMa/LOLauncher'
-DEFAULT_METADATA_DIR = r"C:\ProgramData\Riot Games\Metadata\league_of_legends.live\league_of_legends.live.product_settings.yaml"
-DEFAULT_METADATA_FILE = f"{DEFAULT_METADATA_DIR}\\league_of_legends.live.product_settings.yaml"
+SUPPORTED_PATCH_LINEs = ['live', 'pbe']
+DEFAULT_PATCH_LINE = 'live'
+DEFAULT_DRIVE = r"C:"
+# DEFAULT_METADATA_DIR = rf"{DEFAULT_DRIVE}\ProgramData\Riot Games\Metadata\league_of_legends.live"
+# DEFAULT_METADATA_FILE = f"{DEFAULT_METADATA_DIR}\\league_of_legends.live.product_settings.yaml"
+# PBE_METADATA_DIR = rf"{DEFAULT_DRIVE}\ProgramData\Riot Games\Metadata\league_of_legends.pbe"
+# PBE_METADATA_FILE = f"{PBE_METADATA_DIR}\\league_of_legends.pbe.product_settings.yaml"
+METADATA_DIR_FORMAT = r"{drive}\ProgramData\Riot Games\Metadata\league_of_legends.{patch_line}"
+METADATA_FILE_FORMAT = "league_of_legends.{patch_line}.product_settings.yaml"
+DEFAULT_METADATA_DIR = METADATA_DIR_FORMAT.format(drive=DEFAULT_DRIVE, patch_line=DEFAULT_PATCH_LINE)
+DEFAULT_METADATA_FILE = os.path.join(DEFAULT_METADATA_DIR, METADATA_FILE_FORMAT.format(patch_line=DEFAULT_PATCH_LINE))
 
 LOCALE_CODES = {
     "zh_CN": "简体中文（国服）",
@@ -79,14 +88,16 @@ QUICK_CHAT_DOC = r"https://www.bilibili.com/read/cv35772066"
 ########################################################################################
 class FileWatcher(FileSystemEventHandler):
 
-    def __init__(self, file_path, selected_locale, msg_callback_fn=None):
-        self.file_path = file_path
+    def __init__(self, *watching_files, selected_locale, msg_callback_fn=None):
+        self.watching_files = filter_existing_files(watching_files)
+        print(f"Watching files: {self.watching_files}")
         self.selected_locale = selected_locale
         self.msg_callback_fn = msg_callback_fn or print
         super().__init__()
 
     def on_modified(self, event):
-        if event.src_path == self.file_path:
+        print(f'event type: {event.event_type}  path : {event.src_path}')
+        if normalize_file_path(event.src_path) in self.watching_files:
             print(f'File {event.src_path} has been modified')
             content = read_yaml(event.src_path)
             if not is_valid_settings(content):
@@ -95,7 +106,6 @@ class FileWatcher(FileSystemEventHandler):
             curr_locale = content['settings']['locale']
             if curr_locale != self.selected_locale:
                 self.msg_callback_fn(f'正在将语言 {curr_locale} 更新为 {self.selected_locale} ...')
-                # print(f'Updating locale from {curr_locale} to {self.selected_locale} ...')
                 update_settings(event.src_path, self.selected_locale, self.msg_callback_fn)
 
 
@@ -142,66 +152,6 @@ def bring_to_foreground(pid):
             ctypes.windll.user32.SetForegroundWindow(hwnd)
             ctypes.windll.user32.SetFocus(hwnd)
             mouse.click()  # Assume pid is a full screen app
-            return False  # stop enumerating windows
-        return True  # continue enumerating windows
-
-    print("Bringing to front and clicking")
-    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
-    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
-
-
-def bring_to_front(pid):
-    """
-    Bring the window of the process to the front and set focus
-    :param pid: the process ID
-    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
-    """
-    foreground_window = ctypes.windll.user32.GetForegroundWindow()
-    pid_foreground_window = wintypes.DWORD()
-    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
-    if pid_foreground_window.value == pid:
-        # ctypes.windll.user32.SetFocus(foreground_window)
-        return True
-
-    def enum_windows_proc(hwnd, lparam):
-        pid_window = wintypes.DWORD()
-        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
-        if pid_window.value == pid:
-            ctypes.windll.user32.SetForegroundWindow(hwnd)
-            ctypes.windll.user32.SetFocus(hwnd)
-            # Simulate Alt key press and release
-            ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)  # Alt key down
-            ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)  # Alt key up
-            return False  # stop enumerating windows
-        return True  # continue enumerating windows
-
-    enum_windows_proc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)(enum_windows_proc)
-    ctypes.windll.user32.EnumWindows(enum_windows_proc, 0)
-
-
-def bring_to_front2(pid):
-    """
-    Bring the window of the process to the front and set focus
-    :param pid: the process ID
-    :return: True if the window is already in the front or successfully brought to the front and focus, False otherwise
-    """
-    foreground_window = ctypes.windll.user32.GetForegroundWindow()
-    pid_foreground_window = wintypes.DWORD()
-    ctypes.windll.user32.GetWindowThreadProcessId(foreground_window, ctypes.byref(pid_foreground_window))
-    if pid_foreground_window.value == pid:
-        ctypes.windll.user32.SetFocus(foreground_window)
-        return True
-
-    def enum_windows_proc(hwnd, lparam):
-        pid_window = wintypes.DWORD()
-        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_window))
-        if pid_window.value == pid:
-            # Attach the input processing mechanism of the foreground window's thread to our thread
-            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, True)
-            ctypes.windll.user32.SetForegroundWindow(hwnd)
-            ctypes.windll.user32.SetFocus(hwnd)
-            # Detach the input processing mechanism after setting the focus
-            ctypes.windll.user32.AttachThreadInput(ctypes.windll.kernel32.GetCurrentThreadId(), pid_foreground_window.value, False)
             return False  # stop enumerating windows
         return True  # continue enumerating windows
 
@@ -274,12 +224,19 @@ def check_for_updates(no_new_version_callback=None):
         no_new_version_callback()
 
 
+def normalize_file_path(file_path):
+    file_path = os.path.abspath(file_path)
+    file_path = os.path.realpath(file_path)
+    file_path = os.path.normpath(file_path)
+    return file_path
+
+
 def filter_existing_files(file_paths):
-    return list(set(filter(os.path.exists, file_paths)))
+    return list(set(filter(os.path.exists, map(normalize_file_path, file_paths))))
 
 
-def filter_valid_metadata_files(filenames):
-    return list(filter(is_valid_metadata_file, filenames))
+def filter_valid_metadata_files(*file_paths):
+    return list(set(filter(is_valid_metadata_file, map(normalize_file_path, file_paths))))
 
 
 def to_list(data):
@@ -342,11 +299,12 @@ def open_metadata_file_dialog(title, file_types, initial_dir=DEFAULT_METADATA_DI
 
 def find_setting_files():
     while True:
-        selected_file = open_metadata_file_dialog(title="请选择 league_of_legends.live.product_settings.yaml 文件",
+        selected_file = open_metadata_file_dialog(title="请选择 league_of_legends.[live|pbe].product_settings.yaml 文件",
                                                   file_types=[('Riot 配置文件', '*.yaml'), ('所有文件', '*.*')],
                                                   initial_dir=DEFAULT_METADATA_DIR, initial_file=DEFAULT_METADATA_FILE)
-        if selected_file:
-            return [selected_file]
+        selected_files = filter_valid_metadata_files(*to_list(selected_file))
+        if len(selected_files) > 0:
+            return selected_files
         else:
             decision = easygui.buttonbox(
                 "您要重新选择文件，还是退出？\n",
@@ -373,44 +331,33 @@ def is_valid_metadata_file(filename):
 def detect_metadata_file():
     print("Detecting metadata file...")
     setting_files = []
-    filename_suffix = r"ProgramData\Riot Games\Metadata\league_of_legends.live\league_of_legends.live.product_settings.yaml"
+
+    filename_suffixes = [os.path.join(
+        METADATA_DIR_FORMAT.format(drive="", patch_line=patch_line),
+        METADATA_FILE_FORMAT.format(patch_line=patch_line)
+    ) for patch_line in SUPPORTED_PATCH_LINEs]
     for drive in get_drives():
-        filename = os.path.join(drive, filename_suffix)
-        if is_valid_metadata_file(filename):
-            print(f"Found metadata file: {filename}")
-            setting_files.append(filename)
+        for filename_suffix in filename_suffixes:
+            filename = os.path.join(drive, filename_suffix)
+            if is_valid_metadata_file(filename):
+                print(f"Found metadata file: {filename}")
+                setting_files.append(filename)
     return setting_files
 
 
-def verify_metadata_file(config) -> str:
-    setting_files = filter_valid_metadata_files(to_list(config.get('SettingFile', [])))
+def verify_metadata_file(config) -> [str]:
+    setting_files = detect_metadata_file()
+    setting_files = filter_valid_metadata_files(*to_list(config.get('SettingFile', [])), *setting_files)
     if not setting_files or len(setting_files) < 1:
-        print("开始尝试自动查找配置文件...")
-        setting_files = detect_metadata_file()
-        if not setting_files or len(setting_files) < 1:
-            decision = easygui.buttonbox("该文件通常位于：\n\n"
-                                         r"[系统盘]:\ProgramData\Riot Games\Metadata\league_of_legends.live"
-                                         r"\league_of_legends.live.product_settings.yaml",
-                                         "未找到配置文件，请手动选择", ["手动选择", "退出"])
-            if decision.lower() == '手动选择':
-                setting_files = find_setting_files()
-            else:
-                sys.exit()
-    if len(setting_files) > 1:
-        msg = "请从以下选项中选择一个配置文件"
-        title = "找到多个配置文件，请选择一个"
-        choice = easygui.choicebox(msg, title, setting_files)
-        setting_files = [choice]
-    if not is_valid_metadata_file(setting_files[0]):
-        decision = easygui.buttonbox("该文件通常位于："
-                                     r"[系统盘]:\ProgramData\Riot Games\Metadata\league_of_legends.live"
-                                     r"\league_of_legends.live.product_settings.yaml",
-                                     "无效的配置文件，请重新选择", ["重新选择", "退出"])
-        if decision.lower() == '重新选择':
+        decision = easygui.buttonbox("该文件通常位于：\n\n"
+                                     rf"[系统盘]:{DEFAULT_METADATA_DIR}"
+                                     rf"{DEFAULT_METADATA_FILE}",
+                                     "未找到配置文件，请手动选择", ["手动选择", "退出"])
+        if decision.lower() == '手动选择':
             setting_files = find_setting_files()
         else:
             sys.exit()
-    return setting_files[0]
+    return setting_files
 
 
 def is_read_only(file_path):

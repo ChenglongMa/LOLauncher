@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import tkinter as tk
+from tkinter import ttk
 
 import easygui
 import keyboard

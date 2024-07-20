@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     config = read_json(CONFIG_FILENAME) or {}
     ui_config = read_json(GUI_CONFIG_FILENAME) or {}
-    setting_file = verify_metadata_file(config)
+    setting_files = verify_metadata_file(config)
 
-    app = App(setting_file, config, ui_config)
+    app = App(setting_files, config, ui_config)
     app.run()
