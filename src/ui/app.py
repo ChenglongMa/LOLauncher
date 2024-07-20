@@ -1,6 +1,7 @@
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, font
+import sv_ttk
 
 import pystray
 from PIL import Image
@@ -8,27 +9,39 @@ from watchdog.observers import Observer
 
 from assets import get_asset
 from ui.quick_chat import QuickChatDialog
-from ui.utils import create_warning_label
+from ui.utils import create_warning_label, THEME_COLOR
 from utils import *
 
 
+def change_font(font_family):
+    for font_name in font.names():
+        _font = font.nametofont(font_name)
+        _font.config(family=font_family)
+
+
 class App:
-    def __init__(self, setting_file, config, gui_config):
-        self.setting_file = setting_file
+    def __init__(self, setting_files, config, gui_config):
+        self.setting_files: [str] = setting_files
         self.config = config
         self.ui_config = gui_config
         self.locale_dict = {value: key for key, value in LOCALE_CODES.items()}
         self.game_client = config.get("GameClient", "")
-        self.observer: Observer | None = None
+        self.observers: [Observer] = []
         self.watching = False
         self.watch_thread = None
 
         self.root = tk.Tk()
+        self.theme: str = self.ui_config.get("Theme", "light")
+        if "dark" in self.theme.lower():
+            sv_ttk.use_dark_theme()
+        else:
+            sv_ttk.use_light_theme()
+        change_font("Microsoft YaHei UI")
         self.root.title(f"{APP_NAME} v{VERSION}")
-        self.window_width = 300
-        self.window_height = 330
-        self.control_padding = 8
-        self.layout_padding = 10
+        self.window_width = 350
+        self.window_height = 420
+        self.control_padding = 10
+        self.layout_padding = 15
 
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
@@ -42,6 +55,8 @@ class App:
 
         self.create_menu_bar()
         self.selected_locale = config.get("Locale", "zh_CN")
+        if self.selected_locale not in LOCALE_CODES.keys():
+            self.selected_locale = "zh_CN"
         self.create_locale_groupbox()
         self.create_quick_chat_groupbox()
 
@@ -82,6 +97,8 @@ class App:
         self.setting_menu.add_command(label="自动检测游戏配置文件", command=self.detect_metadata_file)
         self.setting_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
         # self.setting_menu.add_command(label="恢复默认", command=self.reset_settings)
+        self.setting_menu.add_separator()
+        self.setting_menu.add_command(label="切换颜色主题", command=lambda: self.root.after(0, self.toggle_theme))
         self.minimize_on_closing = tk.BooleanVar(value=self.config.get("MinimizeOnClosing", True))
         self.setting_menu.add_checkbutton(label="关闭时最小化到托盘", variable=self.minimize_on_closing)
         self.menu_bar.add_cascade(label="设置", menu=self.setting_menu)
@@ -91,8 +108,14 @@ class App:
         self.menu_bar.add_cascade(label="帮助", menu=self.help_menu)
         self.root.config(menu=self.menu_bar)
 
+    def toggle_theme(self):
+        sv_ttk.toggle_theme()
+        self.theme = sv_ttk.get_theme()
+        self.quick_chat_warning_label.config(background=THEME_COLOR[self.theme]["warning_bg"], foreground=THEME_COLOR[self.theme]["warning_fg"])
+        self.quick_chat_warning_label.tag_config("link", foreground=THEME_COLOR[self.theme]["accent"], underline=True)
+
     def create_locale_groupbox(self):
-        self.locale_groupbox = tk.LabelFrame(self.root, text="语言设置")
+        self.locale_groupbox = ttk.LabelFrame(self.root, text="语言设置", style='Card.TFrame')
         self.locale_var = tk.StringVar(value=LOCALE_CODES[self.selected_locale])
         self.locale_dropdown = ttk.Combobox(self.locale_groupbox, textvariable=self.locale_var, state="readonly", exportselection=True)
         self.locale_dropdown['values'] = list(self.locale_dict.keys())
@@ -127,25 +150,36 @@ class App:
             self.quick_chat_dialog.disable_hotkey()
 
     def create_quick_chat_groupbox(self):
-        self.quick_chat_groupbox = tk.LabelFrame(self.root, text="一键喊话设置")
+        self.quick_chat_groupbox = ttk.LabelFrame(self.root, text="一键喊话设置", style='Card.TFrame')
         self.quick_chat_doc = self.config.get("QuickChatDoc", QUICK_CHAT_DOC)
-        self.quick_chat_warning_label = create_warning_label(self.quick_chat_groupbox, "\u26A1 使用前请仔细阅读", "注意事项", self.quick_chat_doc)
+        self.quick_chat_warning_label = create_warning_label(
+            self.quick_chat_groupbox,
+            "\u26A1 使用前请仔细阅读", "注意事项",
+            self.quick_chat_doc,
+            theme=self.theme
+        )
         self.quick_chat_warning_label.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
         self.quick_chat_enabled_setting = self.config.get("QuickChatEnabled", False)
         self.quick_chat_enabled = tk.BooleanVar(value=self.quick_chat_enabled_setting)
         self.quick_chat_enabled.trace("w", self.on_quick_chat_enable_change)
-        state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
-        self.quick_chat_checkbox = tk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled)
+
+        self.quick_chat_checkbox = ttk.Checkbutton(self.quick_chat_groupbox, text="一键喊话", variable=self.quick_chat_enabled,
+                                                   style='Switch.TCheckbutton')
         self.quick_chat_checkbox.pack()
 
-        self.shortcut_frame = tk.Frame(self.quick_chat_groupbox)
+        self.shortcut_frame = ttk.Frame(self.quick_chat_groupbox)
 
-        self.shortcut_label = tk.Label(self.shortcut_frame, text="快捷键")
-        self.shortcut_label.pack(side=tk.LEFT)
-        self.shortcut_var = tk.StringVar(value=self.config.get("QuickChatShortcut", "`"))
-
-        self.shortcut_dropdown = ttk.Combobox(self.shortcut_frame, state=state, textvariable=self.shortcut_var, exportselection=True)
+        self.shortcut_label = ttk.Label(self.shortcut_frame, text="快捷键")
+        self.shortcut_label.pack(side=tk.LEFT, padx=self.control_padding)
         available_shortcuts = ["`", "Alt", "Ctrl", "Shift", "Tab"]
+        setting_value = self.config.get("QuickChatShortcut", "`")
+        if setting_value not in available_shortcuts:
+            available_shortcuts.append(setting_value)
+        self.shortcut_var = tk.StringVar(value=setting_value)
+
+        state = "readonly" if self.quick_chat_enabled.get() else tk.DISABLED
+        self.shortcut_dropdown = ttk.Combobox(self.shortcut_frame, state=state, textvariable=self.shortcut_var, exportselection=True)
+
         self.shortcut_dropdown['values'] = available_shortcuts
         self.shortcut_dropdown.current(available_shortcuts.index(self.shortcut_var.get()))
         self.shortcut_dropdown.bind("<<ComboboxSelected>>", self.on_shortcut_changed)
@@ -153,7 +187,8 @@ class App:
 
         self.shortcut_frame.pack(padx=self.layout_padding)
 
-        self.set_chat_button = tk.Button(self.quick_chat_groupbox, text="设置喊话内容", state=state, command=self.open_quick_chat_file)
+        state = tk.NORMAL if self.quick_chat_enabled.get() else tk.DISABLED
+        self.set_chat_button = ttk.Button(self.quick_chat_groupbox, text="设置喊话内容", state=state, command=self.open_quick_chat_file)
         self.set_chat_button.pack(padx=self.control_padding, pady=self.control_padding, fill=tk.BOTH)
 
         self.quick_chat_groupbox.pack(fill=tk.BOTH, padx=self.layout_padding, pady=self.layout_padding)
@@ -171,14 +206,16 @@ class App:
         subprocess.run(['notepad.exe', QUICK_CHAT_FILENAME], check=False)
 
     def create_launch_button(self):
+        style = ttk.Style()
+        style.configure('CustomAccent.TButton', font=('Microsoft YaHei', 16, 'bold'))
         self.image = tk.PhotoImage(file=get_asset("button_icon.png"))
-        self.launch_button = tk.Button(self.root, text="英雄联盟，启动！", image=self.image, compound=tk.LEFT,
-                                       command=self.start)
+        self.launch_button = ttk.Button(self.root, text="英雄联盟，启动！", image=self.image, compound=tk.LEFT,
+                                        command=self.start, style="CustomAccent.TButton")
         self.launch_button.pack(side=tk.BOTTOM, pady=self.layout_padding)
 
     def create_status_bar(self):
         self.status_var = tk.StringVar(value="准备就绪")
-        self.status_bar = tk.Label(self.root, textvariable=self.status_var, bd=1, relief=tk.RIDGE, anchor=tk.W, foreground="gray")
+        self.status_bar = ttk.Label(self.root, textvariable=self.status_var, relief=tk.RIDGE, anchor=tk.W, foreground="gray")
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
     def update_status(self, message):
@@ -193,12 +230,13 @@ class App:
         self.about_window.protocol("WM_DELETE_WINDOW", lambda: self.on_about_window_closing(create_tray=icon is not None))
         self.app_name_label = tk.Label(self.about_window, text=f"{APP_NAME} v{VERSION}")
         self.app_name_label.pack(padx=self.control_padding, pady=pady)
+        accent_color = THEME_COLOR[self.theme]["accent"]
 
-        self.author_label = tk.Label(self.about_window, text="作者：Chenglong Ma", fg="blue", cursor="hand2")
+        self.author_label = tk.Label(self.about_window, text="作者：Chenglong Ma", fg=accent_color, cursor="hand2")
         self.author_label.pack(padx=self.control_padding, pady=pady)
         self.author_label.bind("<Button-1>", lambda event: open_my_homepage())
 
-        self.homepage_label = tk.Label(self.about_window, text=f"GitHub：{REPO_NAME}", fg="blue", cursor="hand2")
+        self.homepage_label = tk.Label(self.about_window, text=f"GitHub：{REPO_NAME}", fg=accent_color, cursor="hand2")
         self.homepage_label.pack(padx=self.control_padding, pady=pady)
         self.homepage_label.bind("<Button-1>", lambda event: open_repo_page())
 
@@ -207,25 +245,25 @@ class App:
 
     def on_about_window_closing(self, create_tray=False):
         self.about_window.destroy()
-        # if create_tray:
-        #     self.run_tray_app()
 
     def no_new_version_fn(self):
         messagebox.showinfo("检查更新", "当前已是最新版本")
         self.update_status("当前已是最新版本")
 
-    def start_game(self, settings):
+    def start_game(self, *settings):
         self.update_status("正在启动游戏...")
-        product_install_root = settings['product_install_root']
-
-        product_install_root = product_install_root if os.path.exists(product_install_root) else "C:/"
-
-        game_clients_in_settings = [os.path.join(product_install_root, "Riot Client/RiotClientServices.exe")]
-
+        game_clients_in_settings = [os.path.join(setting['product_install_root'], "Riot Client/RiotClientServices.exe") for setting in settings]
         game_clients = filter_existing_files(to_list(self.game_client) + game_clients_in_settings)
         if not game_clients or len(game_clients) == 0:
             self.update_status("未找到 RiotClientServices.exe，请手动启动游戏。")
             return
+        if len(game_clients) > 1:
+            msg = "请从以下选项中选择一个游戏启动路径"
+            title = "找到多个游戏路径，请选择一个"
+            choice = easygui.choicebox(msg, title, game_clients)
+            if not choice:
+                return
+            game_clients = [choice]
 
         self.update_status("英雄联盟，启动！")
         self.game_client = os.path.normpath(game_clients[0])
@@ -233,22 +271,28 @@ class App:
 
     def start(self):
         self.update_status("正在更新配置文件...")
-        settings = update_settings(self.setting_file, self.selected_locale, msg_callback_fn=self.update_status)
-        if not settings:
+        settings = []
+        for setting_file in self.setting_files:
+            setting = update_settings(setting_file, self.selected_locale, msg_callback_fn=self.update_status)
+            if setting:
+                settings.append(setting)
+
+        if len(settings) == 0:
             messagebox.showerror("错误", "配置文件更新失败，无法启动游戏。")
             return
 
-        self.start_game(settings)
+        self.start_game(*settings)
         self.on_window_minimizing(True)
 
     def wait_for_observer_stopping(self):
         print("Stopping observer...")
         self.watching = False
-        if self.observer is not None and self.observer.is_alive():
-            self.observer.stop()
-            # self.observer.join()
-            print("Observer stopped")
-        self.observer = None
+        for observer in self.observers:
+            if observer is not None and observer.is_alive():
+                observer.stop()
+                # observer.join()
+                print("Observer stopped")
+        self.observers = []
 
     def start_watch_thread(self):
         self.wait_for_observer_stopping()
@@ -257,28 +301,33 @@ class App:
 
     def watch_file(self):
         self.wait_for_observer_stopping()
-        event_handler = FileWatcher(self.setting_file, self.selected_locale)
-        self.observer = Observer()
-        self.observer.schedule(event_handler, path=os.path.dirname(self.setting_file), recursive=False)
+        event_handler = FileWatcher(*self.setting_files, selected_locale=self.selected_locale)
+        unique_dirs = set(os.path.dirname(file) for file in self.setting_files)
+        for directory in unique_dirs:
+            observer = Observer()
+            observer.schedule(event_handler, path=directory, recursive=False)
+            observer.start()
+            self.observers.append(observer)
         self.watching = True
-        self.observer.start()
-        print(f"Watching {self.setting_file}...")
+        print(f"Start Watching...")
 
         try:
             while self.watching:
                 time.sleep(1)
         except KeyboardInterrupt:
-            self.observer.stop()
+            [observer.stop() for observer in self.observers]
+            self.watching = False
         except Exception as e:
             self.update_status(f"Error: {e}")
-            self.observer.stop()
+            [observer.stop() for observer in self.observers]
+            self.watching = False
 
     def detect_metadata_file(self):
         is_yes = tk.messagebox.askyesno("提示", "您确定要重新检测以修改已有配置？")
         if is_yes:
             setting_files = detect_metadata_file()
             if setting_files:
-                self.setting_file = setting_files[0]  # TODO: multiple files support
+                self.setting_files = setting_files
                 self.sync_config()
                 msg = "游戏配置文件已更新"
             else:
@@ -293,7 +342,7 @@ class App:
                                                       file_types=[('Riot 配置文件', '*.yaml'), ('所有文件', '*.*')],
                                                       initial_dir=DEFAULT_METADATA_DIR, initial_file=DEFAULT_METADATA_FILE)
             if selected_file:
-                self.setting_file = selected_file
+                self.setting_files = [selected_file]
                 self.sync_config()
                 msg = "游戏配置文件已更新"
             else:
@@ -338,7 +387,7 @@ class App:
         default_config = {
             "@注意": r"请使用\或/做为路径分隔符，如 C:\ProgramData 或 C:/ProgramData",
             "@SettingFile": "请在下方填写 league_of_legends.live.product_settings.yaml 文件路径",
-            "SettingFile": self.setting_file,
+            "SettingFile": self.setting_files,
             "@GameClient": "请在下方填写 RiotClientServices.exe 文件路径",
             "GameClient": self.game_client,
             "Locale": self.selected_locale,
@@ -351,6 +400,7 @@ class App:
         self.config.update(default_config)
         self.config.update(self.quick_chat_dialog.user_config)
         write_json(CONFIG_FILENAME, self.config)
+        self.ui_config["Theme"] = self.theme
         self.ui_config.update(self.quick_chat_dialog.ui_config)
         write_json(GUI_CONFIG_FILENAME, self.ui_config)
         print("Configuration file updated")
