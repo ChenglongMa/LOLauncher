@@ -129,7 +129,6 @@ def is_running(process_name):
             return pid
     except Exception as e:
         print(f"Error checking if {process_name} is running: {e}")
-        pass
 
 
 def is_foreground_window(pid):

@@ -27,8 +27,6 @@ class App:
         self.locale_dict = {value: key for key, value in LOCALE_CODES.items()}
         self.game_client = config.get("GameClient", "")
         self.observers: [Observer] = []
-        self.watching = False
-        self.watch_thread = None
 
         self.root = tk.Tk()
         self.theme: str = self.ui_config.get("Theme", "light")
@@ -91,12 +89,19 @@ class App:
         self.quick_chat_enabled.set(not current_state)
         self.quick_chat_enabled_setting = not current_state
 
+    def set_process_name(self):
+        process_name = easygui.enterbox("请输入进程名称", "设置进程名称", self.config.get("Process Name", "League of Legends.exe"))
+        if process_name:
+            self.config["Process Name"] = process_name
+            self.sync_config()
+            self.update_status(f"进程名称已设置为：{process_name}")
+
     def create_menu_bar(self):
         self.menu_bar = tk.Menu(self.root)
         self.setting_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.setting_menu.add_command(label="自动检测游戏配置文件", command=self.detect_metadata_file)
         self.setting_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
-        # self.setting_menu.add_command(label="恢复默认", command=self.reset_settings)
+        self.setting_menu.add_command(label="设置进程名称", command=self.set_process_name)
         self.setting_menu.add_separator()
         self.setting_menu.add_command(label="切换颜色主题", command=lambda: self.root.after(0, self.toggle_theme))
         self.minimize_on_closing = tk.BooleanVar(value=self.config.get("MinimizeOnClosing", True))
@@ -113,6 +118,7 @@ class App:
         self.theme = sv_ttk.get_theme()
         self.quick_chat_warning_label.config(background=THEME_COLOR[self.theme]["warning_bg"], foreground=THEME_COLOR[self.theme]["warning_fg"])
         self.quick_chat_warning_label.tag_config("link", foreground=THEME_COLOR[self.theme]["accent"], underline=True)
+        self.create_custom_button_style()
 
     def create_locale_groupbox(self):
         self.locale_groupbox = ttk.LabelFrame(self.root, text="语言设置", style='Card.TFrame')
@@ -205,9 +211,12 @@ class App:
             create_quick_chat_file(CONFIG_FILENAME)
         subprocess.run(['notepad.exe', QUICK_CHAT_FILENAME], check=False)
 
-    def create_launch_button(self):
+    def create_custom_button_style(self):
         style = ttk.Style()
         style.configure('CustomAccent.TButton', font=('Microsoft YaHei', 16, 'bold'))
+
+    def create_launch_button(self):
+        self.create_custom_button_style()
         self.image = tk.PhotoImage(file=get_asset("button_icon.png"))
         self.launch_button = ttk.Button(self.root, text="英雄联盟，启动！", image=self.image, compound=tk.LEFT,
                                         command=self.start, style="CustomAccent.TButton")
@@ -281,26 +290,20 @@ class App:
             messagebox.showerror("错误", "配置文件更新失败，无法启动游戏。")
             return
 
+        self.start_observers()
         self.start_game(*settings)
         self.on_window_minimizing(True)
 
-    def wait_for_observer_stopping(self):
+    def stop_observers(self):
         print("Stopping observer...")
-        self.watching = False
         for observer in self.observers:
             if observer is not None and observer.is_alive():
                 observer.stop()
-                # observer.join()
+                observer.join()
                 print("Observer stopped")
         self.observers = []
 
-    def start_watch_thread(self):
-        self.wait_for_observer_stopping()
-        self.watch_thread = threading.Thread(target=self.watch_file)
-        self.watch_thread.start()
-
-    def watch_file(self):
-        self.wait_for_observer_stopping()
+    def start_observers(self):
         event_handler = FileWatcher(*self.setting_files, selected_locale=self.selected_locale)
         unique_dirs = set(os.path.dirname(file) for file in self.setting_files)
         for directory in unique_dirs:
@@ -308,19 +311,7 @@ class App:
             observer.schedule(event_handler, path=directory, recursive=False)
             observer.start()
             self.observers.append(observer)
-        self.watching = True
         print(f"Start Watching...")
-
-        try:
-            while self.watching:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            [observer.stop() for observer in self.observers]
-            self.watching = False
-        except Exception as e:
-            self.update_status(f"Error: {e}")
-            [observer.stop() for observer in self.observers]
-            self.watching = False
 
     def detect_metadata_file(self):
         is_yes = tk.messagebox.askyesno("提示", "您确定要重新检测以修改已有配置？")
@@ -351,6 +342,7 @@ class App:
             tk.messagebox.showinfo("提示", msg)
 
     def on_locale_changed(self, event):
+        self.stop_observers()
         current_value = self.locale_var.get()
         self.selected_locale = self.locale_dict[current_value]
         self.update_status(f"语言将被设置为：{current_value}")
@@ -378,7 +370,6 @@ class App:
             self.on_window_closing(self.tray_app)
 
     def run(self):
-        self.start_watch_thread()
         self.tray_thread.start()
         self.root.mainloop()
         self.tray_thread.join()
@@ -392,7 +383,7 @@ class App:
             "GameClient": self.game_client,
             "Locale": self.selected_locale,
             "MinimizeOnClosing": self.minimize_on_closing.get(),
-            "Process Name": "League of Legends.exe",
+            "Process Name": self.config.get("Process Name", "League of Legends.exe"),
             "QuickChatEnabled": self.quick_chat_enabled.get(),
             "QuickChatShortcut": self.shortcut_var.get(),
             "QuickChatDoc": QUICK_CHAT_DOC,
@@ -409,7 +400,7 @@ class App:
 
         close = messagebox.askyesno("退出", "退出后再启动游戏时文本和语音将恢复为默认设置\n您确定要退出吗？")
         if close:
-            self.wait_for_observer_stopping()
+            self.stop_observers()
             if icon:
                 icon.stop()
             self.sync_config()

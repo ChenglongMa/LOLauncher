@@ -34,7 +34,8 @@ Remove-Folders -Paths @(".\dist", ".\build", ".\$EnvName")
 Write-Output "Building..."
 
 Write-Output "Creating Virtual Environment..."
-
+.\venv\Scripts\python.exe -m pip install --upgrade pip
+.\venv\Scripts\pip.exe install -r requirements-dev.txt
 .\venv\Scripts\python.exe -m venv $EnvName
 
 Write-Output "Activating Virtual Environment..."

@@ -42,7 +42,6 @@ class QuickChatDialog(tk.Toplevel):
         self.user_config = config
         self.ui_config = gui_config
         self.shortcut = None
-        self.lol_exe_name = self.user_config.get('Process Name', 'League of Legends.exe')
         self.lol_pid = None
         self.lock = threading.Lock()
 
@@ -62,7 +61,7 @@ class QuickChatDialog(tk.Toplevel):
         self.attributes('-alpha', 0.95)
         self.config(
             background=self.default_bg,
-            # borderwidth=10,  # DON'T use this to change border width
+            # borderwidth=10, # DON'T use this to change border width
             highlightthickness=3,
             highlightcolor=self.border_color,
             highlightbackground=self.border_color_inactive,
@@ -163,7 +162,7 @@ class QuickChatDialog(tk.Toplevel):
         if self.winfo_viewable():
             self.withdraw()
         else:
-            self.lol_pid = is_running(self.lol_exe_name)
+            self.lol_pid = is_running(self.user_config.get("Process Name", "League of Legends.exe"))
             if not self.lol_pid:
                 decision = easygui.buttonbox("游戏对局未开始，是否显示一键喊话对话框？", "提示", ["是", "取消", "关闭一键喊话"])
                 if not decision or decision == "取消":
