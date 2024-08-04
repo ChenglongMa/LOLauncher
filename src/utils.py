@@ -20,7 +20,7 @@ import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 APP_NAME = 'LOLauncher'
 REPO_NAME = 'ChenglongMa/LOLauncher'
 SUPPORTED_PATCH_LINEs = ['live', 'pbe']
