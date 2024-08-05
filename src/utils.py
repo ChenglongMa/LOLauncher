@@ -1,5 +1,6 @@
 import ctypes
 import json
+import locale
 import os
 import re
 import shutil
@@ -20,7 +21,7 @@ import yaml
 from github import Github
 from watchdog.events import FileSystemEventHandler
 
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 APP_NAME = 'LOLauncher'
 REPO_NAME = 'ChenglongMa/LOLauncher'
 SUPPORTED_PATCH_LINEs = ['live', 'pbe']
@@ -122,7 +123,8 @@ def write_permission(file_path):
 def is_running(process_name):
     try:
         commands = ['tasklist', '/FI', f'ImageName eq {process_name}', '/FI', 'Status eq Running', '/FO', 'LIST']
-        output = subprocess.check_output(commands, creationflags=subprocess.CREATE_NO_WINDOW).decode()
+        default_encoding = locale.getpreferredencoding()
+        output = subprocess.check_output(commands, creationflags=subprocess.CREATE_NO_WINDOW).decode(default_encoding)
         match = re.search(r'PID:\s+(\d+)', output)
         if match:
             pid = int(match.group(1))
