@@ -15,15 +15,14 @@
 
 # 英雄联盟，启动！
 
-* 该程序用于修改英雄联盟的文本语言为**简体中文**，语音为**国服语音**，并启动游戏。
+* 该程序用于修改英雄联盟的文本语言，比如 **简体中文(国服)**，这样游戏文本语言为**国服翻译**，语音为**国服语音**。
 * 自 [v1.1.0](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.1.0) 版本后，该程序新增 **一键喊话**。
-* 当然你也可以参考 [下方配置文件章节](#配置文件) 将其改为其他语言。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
 
-_如何您喜欢该项目，欢迎点一个⭐！_
+_该程序永久**免费**且**持续更新**，如果您喜欢该项目，欢迎点一个⭐！_
 
-_如果您有任何问题，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。_
+_如果您有任何问题或新的功能需求，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。_
 
 _谢谢关注！_
 
