@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
 
     def on_message(message):
-        if message == "SHOW_YOURSELF":
+        if message == 'SHOW_YOURSELF':
             app.show_window()
 
 

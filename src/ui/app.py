@@ -408,7 +408,7 @@ class App:
 
 
     def show_window(self):
-        print("Showing window")
+        print('Showing window')
 
         if not self.root.winfo_viewable():
             self.root.deiconify()

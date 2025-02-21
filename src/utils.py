@@ -426,8 +426,8 @@ def send_text(text):
 def show_existing_instance():
     try:
         with socket.create_connection((HOST, PORT), timeout=1) as conn:
-            conn.sendall(b"SHOW_YOURSELF\n")
-            print("Another instance is running, message sent.")
+            conn.sendall(b'SHOW_YOURSELF\n')
+            print('Another instance is running, message sent.')
         return True
     except Exception:
         return False
@@ -455,7 +455,7 @@ def start_server(on_message_callback):
     thread = threading.Thread(target=listen_loop, daemon=True)
     thread.start()
 
-def singleton(mutex_name="LOLauncher"):
+def singleton(mutex_name='LOLauncher'):
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
     if ctypes.windll.kernel32.GetLastError() == 183:
         return False
