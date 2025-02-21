@@ -1,5 +1,5 @@
 from ui.app import App
-from utils import read_json, check_for_updates, verify_metadata_file, CONFIG_FILENAME, GUI_CONFIG_FILENAME
+from utils import read_json, check_for_updates, verify_metadata_file, singleton, CONFIG_FILENAME, GUI_CONFIG_FILENAME
 
 if __name__ == '__main__':
     # if not is_admin():
@@ -7,6 +7,7 @@ if __name__ == '__main__':
     #     sys.exit()
     # Don't need to run as administrator since v1.0.2
 
+    singleton()
     check_for_updates()
 
     config = read_json(CONFIG_FILENAME) or {}

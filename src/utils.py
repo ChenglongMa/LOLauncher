@@ -416,3 +416,11 @@ def send_text(text):
     time.sleep(0.05)
     keyboard.write(text)
     keyboard.send('enter')
+
+
+def singleton(mutex_name="LOLauncher"):
+    """Ensure only one instance of the application is running."""
+    mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+    if ctypes.windll.kernel32.GetLastError() == 183:
+        sys.exit()
+
