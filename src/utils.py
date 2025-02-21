@@ -8,8 +8,10 @@ import stat
 import string
 import subprocess
 import sys
+import threading
 import time
 import webbrowser
+import socket
 from contextlib import contextmanager
 from ctypes import wintypes
 from tkinter import filedialog
@@ -84,6 +86,9 @@ CONFIG_FILENAME = os.path.join(CONFIG_DIR, "config.json")
 GUI_CONFIG_FILENAME = os.path.join(CONFIG_DIR, "gui_config.json")
 QUICK_CHAT_FILENAME = os.path.join(CONFIG_DIR, "quick_chat.txt")
 QUICK_CHAT_DOC = r"https://www.bilibili.com/read/cv35772066"
+
+HOST = '127.0.0.1'
+PORT = 65432
 
 
 ########################################################################################
@@ -418,9 +423,41 @@ def send_text(text):
     keyboard.send('enter')
 
 
+def show_existing_instance():
+    try:
+        with socket.create_connection((HOST, PORT), timeout=1) as conn:
+            conn.sendall(b"SHOW_YOURSELF\n")
+            print("Another instance is running, message sent.")
+        return True
+    except Exception:
+        return False
+
+def start_server(on_message_callback):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(1)
+
+    def handle_client(conn, addr):
+        with conn:
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                message = data.decode('utf-8').strip()
+                on_message_callback(message)
+
+    def listen_loop():
+        while True:
+            conn, addr = server_socket.accept()
+            threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
+
+    thread = threading.Thread(target=listen_loop, daemon=True)
+    thread.start()
+
 def singleton(mutex_name="LOLauncher"):
-    """Ensure only one instance of the application is running."""
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
     if ctypes.windll.kernel32.GetLastError() == 183:
-        sys.exit()
+        return False
+    return True
 

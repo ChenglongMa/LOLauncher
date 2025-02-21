@@ -405,3 +405,16 @@ class App:
                 icon.stop()
             self.sync_config()
             self.root.after(0, self.root.destroy)
+
+
+    def show_window(self):
+        print("Showing window")
+
+        if not self.root.winfo_viewable():
+            self.root.deiconify()
+
+        self.root.lift()
+        self.root.focus_force()
+
+        self.root.attributes('-topmost', True)
+        self.root.attributes('-topmost', False)
