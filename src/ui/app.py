@@ -103,9 +103,11 @@ class App:
         self.setting_menu.add_command(label="手动选择游戏配置文件", command=self.choose_metadata_file)
         self.setting_menu.add_command(label="设置进程名称", command=self.set_process_name)
         self.setting_menu.add_separator()
-        self.setting_menu.add_command(label="切换颜色主题", command=lambda: self.root.after(0, self.toggle_theme))
+        self.setting_menu.add_command(label="切换颜色主题", command=lambda: self.root.after(0, func=self.toggle_theme))
         self.minimize_on_closing = tk.BooleanVar(value=self.config.get("MinimizeOnClosing", True))
         self.setting_menu.add_checkbutton(label="关闭时最小化到托盘", variable=self.minimize_on_closing)
+        self.start_game_directly = tk.BooleanVar(value=self.config.get("StartGameDirectly", False))
+        self.setting_menu.add_checkbutton(label="下次直接启动游戏", variable=self.start_game_directly)
         self.menu_bar.add_cascade(label="设置", menu=self.setting_menu)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.help_menu.add_command(label="关于", command=self.show_about)
@@ -374,6 +376,9 @@ class App:
         self.root.mainloop()
         self.tray_thread.join()
 
+        if self.start_game_directly.get():
+            self.start()
+
     def sync_config(self):
         default_config = {
             "@注意": r"请使用\或/做为路径分隔符，如 C:\ProgramData 或 C:/ProgramData",
@@ -383,6 +388,7 @@ class App:
             "GameClient": self.game_client,
             "Locale": self.selected_locale,
             "MinimizeOnClosing": self.minimize_on_closing.get(),
+            "StartGameDirectly": self.start_game_directly.get(),
             "Process Name": self.config.get("Process Name", "League of Legends.exe"),
             "QuickChatEnabled": self.quick_chat_enabled.get(),
             "QuickChatShortcut": self.shortcut_var.get(),

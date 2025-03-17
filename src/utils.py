@@ -31,10 +31,15 @@ DEFAULT_DRIVE = r"C:"
 # DEFAULT_METADATA_FILE = f"{DEFAULT_METADATA_DIR}\\league_of_legends.live.product_settings.yaml"
 # PBE_METADATA_DIR = rf"{DEFAULT_DRIVE}\ProgramData\Riot Games\Metadata\league_of_legends.pbe"
 # PBE_METADATA_FILE = f"{PBE_METADATA_DIR}\\league_of_legends.pbe.product_settings.yaml"
-METADATA_DIR_FORMAT = r"{drive}\ProgramData\Riot Games\Metadata\league_of_legends.{patch_line}"
-METADATA_FILE_FORMAT = "league_of_legends.{patch_line}.product_settings.yaml"
-DEFAULT_METADATA_DIR = METADATA_DIR_FORMAT.format(drive=DEFAULT_DRIVE, patch_line=DEFAULT_PATCH_LINE)
-DEFAULT_METADATA_FILE = os.path.join(DEFAULT_METADATA_DIR, METADATA_FILE_FORMAT.format(patch_line=DEFAULT_PATCH_LINE))
+GAME_NAMES = {
+    "League of Legends": "league_of_legends",
+    "VALORANT": "valorant",
+    "Legends of Runeterra": "bacon",
+}
+METADATA_DIR_FORMAT = r"{drive}\ProgramData\Riot Games\Metadata\{game_name}.{patch_line}"
+METADATA_FILE_FORMAT = "{game_name}.{patch_line}.product_settings.yaml"
+DEFAULT_METADATA_DIR = METADATA_DIR_FORMAT.format(drive=DEFAULT_DRIVE, game_name=GAME_NAMES["League of Legends"], patch_line=DEFAULT_PATCH_LINE)
+DEFAULT_METADATA_FILE = os.path.join(DEFAULT_METADATA_DIR, METADATA_FILE_FORMAT.format(game_name=GAME_NAMES["League of Legends"], patch_line=DEFAULT_PATCH_LINE))
 
 LOCALE_CODES = {
     "zh_CN": "简体中文（国服）",

@@ -24,7 +24,7 @@ function Remove-Folders {
 ####################################################################
 
 Write-Output "Building LOLauncher..."
-$EnvName = "prod_venv"
+$EnvName = ".venv_prod"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
