@@ -20,7 +20,13 @@
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
 
-_该程序永久**免费**且**持续更新**，如果您喜欢该项目，欢迎点一个⭐！_
+> [!NOTE]
+> 虽然该软件看上去 **久不更新**，但这是因为该机制还有效。如果失效，我会马上修复的。
+> 
+> 总之：
+> 
+> _该程序永久**免费**且**持续更新**，如果您喜欢该项目，欢迎点一个⭐！_
+> 
 
 _如果您有任何问题或新的功能需求，请在 [Discussions](https://github.com/ChenglongMa/LOLauncher/discussions) 或 [Issues](https://github.com/ChenglongMa/LOLauncher/issues) 中讨论，也可以给我发邮件 [chenglong.m_at_outlook.com](mailto:chenglong.m@outlook.com)。_
 
