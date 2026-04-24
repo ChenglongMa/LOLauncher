@@ -19,8 +19,8 @@ from tkinter import filedialog
 import easygui
 import keyboard
 import mouse
-import yaml
 from github import Github
+from ruamel.yaml import YAML
 from watchdog.events import FileSystemEventHandler
 
 VERSION = '1.2.2'
@@ -94,6 +94,10 @@ QUICK_CHAT_DOC = r"https://www.bilibili.com/read/cv35772066"
 
 HOST = '127.0.0.1'
 PORT = 65432
+
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.indent(mapping=4, sequence=2, offset=0)
 
 
 ########################################################################################
@@ -290,7 +294,7 @@ def write_json(file_path, data):
 def read_yaml(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+            data = yaml.load(f)
 
         return data
     except Exception as e:
@@ -300,7 +304,7 @@ def read_yaml(file_path):
 
 def write_yaml(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as f:
-        yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+        yaml.dump(data, f)
 
 
 def open_metadata_file_dialog(title, file_types, initial_dir=DEFAULT_METADATA_DIR, initial_file=DEFAULT_METADATA_FILE):
@@ -384,9 +388,12 @@ def update_settings(setting_file, selected_locale, msg_callback_fn=None):
             msg_callback_fn(f"无效文件: {setting_file}")
             return
         current_locale = setting_content['settings']['locale']
-        if current_locale != selected_locale:
-            msg_callback_fn(f"正在备份文件...")
-            backup_file(setting_file)
+        if current_locale == selected_locale:
+            msg_callback_fn(f"语言设置已是 {selected_locale}，无需更新配置文件")
+            return setting_content
+
+        msg_callback_fn(f"正在备份文件...")
+        backup_file(setting_file)
         setting_content['settings']['locale'] = selected_locale
         if is_read_only(setting_file):
             msg_callback_fn(f"文件只读，无法更新: {setting_file}")
@@ -465,4 +472,3 @@ def singleton(mutex_name='LOLauncher'):
     if ctypes.windll.kernel32.GetLastError() == 183:
         return False
     return True
-
