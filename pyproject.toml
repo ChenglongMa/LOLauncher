@@ -5,14 +5,12 @@ description = "A League of Legends launcher language utility."
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "easygui>=0.98.3",
     "keyboard>=0.13.5",
     "mouse>=0.7.1",
-    "pillow>=10.3.0",
     "pygithub>=2.3.0",
-    "pystray>=0.19.5",
+    "PySide6>=6.7,<7",
+    "PySide6-Fluent-Widgets>=1.11,<2",
     "ruamel.yaml>=0.18.6",
-    "sv-ttk>=2.6.0",
     "watchdog>=4.0.1",
 ]
 
@@ -20,6 +18,9 @@ dependencies = [
 dev = [
     "pyinstaller>=6.8.0",
     "pyinstaller-versionfile>=2.1.1",
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+    "pytest-qt>=4.4.0",
 ]
 
 [tool.uv]

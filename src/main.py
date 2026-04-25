@@ -1,8 +1,11 @@
 import sys
-import threading
-from ui.app import App
-from utils import read_json, check_for_updates, verify_metadata_file, singleton, show_existing_instance, start_server, \
-    CONFIG_FILENAME, GUI_CONFIG_FILENAME
+
+from core.config import ensure_config_dir, read_json, verify_metadata_file
+from core.constants import CONFIG_FILENAME, GUI_CONFIG_FILENAME
+from core.platform import show_existing_instance, singleton, start_server
+from core.updates import check_for_updates
+from ui_qt.app import App
+from ui_qt.dialogs import QtDialogService, ensure_qapplication
 
 if __name__ == '__main__':
     # if not is_admin():
@@ -14,20 +17,22 @@ if __name__ == '__main__':
     if not main_instance:
         show_existing_instance()
         sys.exit(0)
-    check_for_updates()
 
-
-    def on_message(message):
-        if message == 'SHOW_YOURSELF':
-            app.show_window()
-
-
-    server_thread = threading.Thread(target=start_server, args=(on_message,), daemon=True)
-    server_thread.start()
+    ensure_config_dir()
+    ensure_qapplication()
+    dialog = QtDialogService()
+    check_for_updates(dialog, print)
 
     config = read_json(CONFIG_FILENAME) or {}
     ui_config = read_json(GUI_CONFIG_FILENAME) or {}
-    setting_files = verify_metadata_file(config)
+    setting_files = verify_metadata_file(config, dialog)
 
-    app = App(setting_files, config, ui_config)
-    app.run()
+    def on_message(message):
+        if message == 'SHOW_YOURSELF':
+            app.request_show()
+
+
+    app = App(setting_files, config, ui_config, dialog=dialog)
+    start_server(on_message)
+
+    sys.exit(app.run())
