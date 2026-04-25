@@ -36,6 +36,28 @@ _谢谢关注！_
 2. 解压缩 `LOLauncher.zip` 到任意目录。
 3. 运行 `LOLauncher.exe`。
 
+## 开发与构建
+
+本项目使用 [uv](https://docs.astral.sh/uv/) 管理 Python 依赖，并限制使用 Python 3.11。
+
+```powershell
+uv python install 3.11
+uv sync
+uv run python src/main.py
+```
+
+构建发布包：
+
+```powershell
+.\build.ps1
+```
+
+构建调试版本：
+
+```powershell
+.\build.ps1 -Dev
+```
+
 ### 程序界面
 
 ![LOLauncher](./docs/LOLauncher.png)

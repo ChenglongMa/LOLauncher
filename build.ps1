@@ -24,27 +24,14 @@ function Remove-Folders {
 ####################################################################
 
 Write-Output "Building LOLauncher..."
-$EnvName = ".venv_prod"
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 Write-Output "Cleaning Up..."
-Remove-Folders -Paths @(".\dist", ".\build", ".\$EnvName")
+Remove-Folders -Paths @(".\dist", ".\build")
 
-Write-Output "Building..."
-
-Write-Output "Creating Virtual Environment..."
-.\venv\Scripts\python.exe -m pip install --upgrade pip
-.\venv\Scripts\pip.exe install -r requirements-dev.txt
-.\venv\Scripts\python.exe -m venv $EnvName
-
-Write-Output "Activating Virtual Environment..."
-$ActivateScript = Join-Path -Path ".\" -ChildPath "$EnvName\Scripts\Activate.ps1"
-. $ActivateScript
-
-Write-Output "Installing Dependencies..."
-& .\$EnvName\Scripts\python.exe -m pip install --upgrade pip
-& .\$EnvName\Scripts\pip.exe install -r requirements.txt
+Write-Output "Syncing Dependencies..."
+& uv sync --locked --python 3.11 --group dev
 
 Write-Output "Building Executable..."
 
@@ -76,11 +63,11 @@ $InstallerArgs = $InstallerArgsDebug + @(
 
 if ($Dev)
 {
-    & .\$EnvName\Scripts\pyinstaller.exe $InstallerArgsDebug
+    & uv run --locked --group dev pyinstaller @InstallerArgsDebug
 }
 else
 {
-    & .\$EnvName\Scripts\pyinstaller.exe $InstallerArgs
+    & uv run --locked --group dev pyinstaller @InstallerArgs
 }
 
 if ($Dev)
@@ -91,10 +78,10 @@ if ($Dev)
 else
 {
     Write-Output "Creating Version File..."
-    & .\venv\Scripts\create-version-file.exe metadata.yml --outfile file_version_info.txt
+    & uv run --locked --group dev create-version-file metadata.yml --outfile file_version_info.txt
 
     Write-Output "Setting Version..."
-    & .\$EnvName\Scripts\pyi-set_version.exe ./file_version_info.txt ./dist/LOLauncher.exe
+    & uv run --locked --group dev pyi-set_version .\file_version_info.txt .\dist\LOLauncher.exe
 
     Write-Output "Compressing Files..."
     Compress-Archive -Path .\dist\LOLauncher.exe -DestinationPath .\dist\LOLauncher.zip
