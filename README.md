@@ -15,7 +15,7 @@
 
 # 英雄联盟，启动！
 
-* 该程序用于修改英雄联盟的文本语言，比如 **简体中文(国服)**，这样游戏文本语言为**国服翻译**，语音为**国服语音**。
+* 该程序用于修改英雄联盟和独立版云顶之弈的语言，例如 **简体中文（国服）**。
 * 自 [v1.1.0](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.1.0) 版本后，该程序新增 **一键喊话**。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
@@ -32,6 +32,14 @@ _如果您有任何问题或新的功能需求，请在 [Discussions](https://gi
 
 _谢谢关注！_
 
+## 更新日志
+
+### 1.3.0
+
+* 新增云顶之弈国服翻译
+
+![TFT](./docs/tft.png)
+
 ## 视频教程
 
 [![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
@@ -41,6 +49,28 @@ _谢谢关注！_
 1. 前往 [Release 页面](https://github.com/ChenglongMa/LOLauncher/releases/latest) 下载最新版本的 [LOLauncher.zip](https://github.com/ChenglongMa/LOLauncher/releases/latest/download/LOLauncher.zip)。
 2. 解压缩 `LOLauncher.zip` 到任意目录。
 3. 运行 `LOLauncher.exe`。
+
+## 开发与构建
+
+本项目使用 [uv](https://docs.astral.sh/uv/) 管理 Python 依赖，并限制使用 Python 3.11。
+
+```powershell
+uv python install 3.11
+uv sync
+uv run python src/main.py
+```
+
+构建发布包：
+
+```powershell
+.\build.ps1
+```
+
+构建调试版本：
+
+```powershell
+.\build.ps1 -Dev
+```
 
 ### 程序界面
 
@@ -65,7 +95,7 @@ _谢谢关注！_
 2. ~~游戏启动成功后**不需要**再次运行该程序，可按照您的习惯启动游戏。若之后游戏更新导致语言恢复，可重新运行该程序。~~
    * 自 1.0.2 版本开始，程序需要保持后台运行，直到游戏启动，以便在游戏更新后自动修改语言。
    * 您依然可以按照您的习惯启动游戏，但是**启动游戏前**请不要关闭该程序。
-3. 本程序会**自动检查更新**，如果有新版本会提示您下载。我会根据游戏的更新情况及时更新程序。
+3. 本程序启动时会**自动检查正式版更新**。发现新版本时会显示更新说明，并可前往发布页下载。也可从 **帮助 → 检查更新** 手动检查。
 
 > [!TIP]
 > 
@@ -85,11 +115,11 @@ _谢谢关注！_
 
 ### 1. 修改游戏语言
 
-如 [程序界面](#程序界面) 所示，启动游戏前，您可以选择游戏的语言。
+在 **语言设置** 中选择语言，点击 **英雄联盟，启动！**。程序会自动检测并更新英雄联盟和独立版云顶之弈的正式服和 PBE 配置。打开 Riot Client 后，从客户端进入要玩的游戏。
 
 > [!NOTE]
 > 
-> 只有**简体中文（国服）** 是带有语音的，其他语言只有文本。
+> 英雄联盟的**简体中文（国服）**支持国服语音。云顶之弈的语音取决于对应版本提供的语言资源。
 > 
 
 ### 2. 一键喊话
@@ -117,7 +147,7 @@ _谢谢关注！_
 }
 ```
 
-- `SettingFile`：英雄联盟的 `league_of_legends.live.product_settings.yaml` 配置文件路径。
+- `SettingFile`：可填写单个 Riot `product_settings.yaml` 路径或路径列表，用于补充自动检测。同一文件只处理一次。
 - `GameClient`：Riot 客户端<img src="./docs/lol_client.ico" alt="Riot 客户端 icon" width="40px">的 `RiotClientServices.exe` 文件路径。
 - `Locale`：游戏语言，例如 `zh_CN` 为中文，`en_US` 为英文。
 - **注意：路径中的 `\` 需要替换为 `\\`，或者使用 `/` （请参考以上示例）。**
