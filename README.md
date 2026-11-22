@@ -32,6 +32,14 @@ _如果您有任何问题或新的功能需求，请在 [Discussions](https://gi
 
 _谢谢关注！_
 
+## 更新日志
+
+### 1.3.0
+
+* 新增云顶之弈国服翻译
+
+![TFT](./docs/tft.png)
+
 ## 视频教程
 
 [![tutorial](./docs/tutorial.png)](https://www.bilibili.com/video/BV1vk3keeEfd/?share_source=copy_web&vd_source=cc52ec064b8a1a36acc686a244981a42)
