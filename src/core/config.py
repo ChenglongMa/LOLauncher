@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 from core.constants import (
     CONFIG_DIR,
     DEFAULT_METADATA_DIR,
-    LANGUAGE_TARGETS,
+    LANGUAGE_PRODUCTS,
     LOCALE_CODES,
     METADATA_RELATIVE_DIR,
     PRODUCT_SETTINGS_SUFFIX,
@@ -115,21 +115,19 @@ def is_valid_metadata_file(filename: str | None) -> bool:
     return is_valid_settings(read_yaml(filename))
 
 
-def detect_metadata_file(configured_files: Any = None, product: str = "") -> list[str]:
-    installations = {
-        f"{game}.{patch_line}{PRODUCT_SETTINGS_SUFFIX}": f"{game}.{patch_line}"
-        for game in LANGUAGE_TARGETS if game and (not product or game == product)
+def detect_metadata_file(configured_files: Any = None) -> list[str]:
+    installations = [
+        f"{game}.{patch_line}"
+        for game in LANGUAGE_PRODUCTS
         for patch_line in SUPPORTED_PATCH_LINES
-    }
+    ]
     metadata_dirs = [DEFAULT_METADATA_DIR, *(os.path.join(drive, METADATA_RELATIVE_DIR) for drive in get_drives())]
     candidates = [
-        os.path.join(directory, installation, filename)
+        os.path.join(directory, installation, f"{installation}{PRODUCT_SETTINGS_SUFFIX}")
         for directory in metadata_dirs
-        for filename, installation in installations.items()
+        for installation in installations
     ]
-    for path in to_list(configured_files):
-        if isinstance(path, (str, os.PathLike)) and (not product or os.path.basename(path).lower() in installations):
-            candidates.append(path)
+    candidates.extend(to_list(configured_files))
     return [path for path in filter_existing_files(candidates) if is_valid_metadata_file(path)]
 
 
@@ -211,7 +209,6 @@ def build_app_config(
     quick_chat_enabled: bool,
     quick_chat_shortcut: str,
     quick_chat_user_config: dict[str, Any] | None = None,
-    language_target: str = "",
 ) -> dict[str, Any]:
     config = dict(existing_config)
     config.update(
@@ -222,7 +219,6 @@ def build_app_config(
             "@GameClient": "请在下方填写 RiotClientServices.exe 文件路径",
             "GameClient": game_client,
             "Locale": selected_locale if selected_locale in LOCALE_CODES else "zh_CN",
-            "LanguageTarget": language_target,
             "MinimizeOnClosing": minimize_on_closing,
             "StartGameDirectly": start_game_directly,
             "Process Name": existing_config.get("Process Name", "League of Legends.exe"),
@@ -233,6 +229,7 @@ def build_app_config(
     )
     if quick_chat_user_config:
         config.update(quick_chat_user_config)
+    config.pop("LanguageTarget", None)
     return config
 
 

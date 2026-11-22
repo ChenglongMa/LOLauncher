@@ -107,7 +107,7 @@ uv run python src/main.py
 
 ### 1. 修改游戏语言
 
-在 **语言设置** 中选择 **英雄联盟**、**云顶之弈** 或 **全部已安装游戏**，再选择语言并点击 **应用语言并启动**。程序会更新所选游戏已检测到的正式服和 PBE 配置。打开 Riot Client 后，从客户端进入要玩的游戏。
+在 **语言设置** 中选择语言，点击 **英雄联盟，启动！**。程序会自动检测并更新英雄联盟和独立版云顶之弈的正式服和 PBE 配置。打开 Riot Client 后，从客户端进入要玩的游戏。
 
 > [!NOTE]
 > 
@@ -139,7 +139,7 @@ uv run python src/main.py
 }
 ```
 
-- `SettingFile`：可填写单个 Riot `product_settings.yaml` 路径或路径列表，用于补充自动检测。同一文件只处理一次。选择单个游戏时，手动文件需要保留原始文件名，例如 `teamfighttactics.live.product_settings.yaml`。
+- `SettingFile`：可填写单个 Riot `product_settings.yaml` 路径或路径列表，用于补充自动检测。同一文件只处理一次。
 - `GameClient`：Riot 客户端<img src="./docs/lol_client.ico" alt="Riot 客户端 icon" width="40px">的 `RiotClientServices.exe` 文件路径。
 - `Locale`：游戏语言，例如 `zh_CN` 为中文，`en_US` 为英文。
 - **注意：路径中的 `\` 需要替换为 `\\`，或者使用 `/` （请参考以上示例）。**

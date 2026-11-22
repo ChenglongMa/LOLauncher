@@ -82,11 +82,9 @@ def test_standalone_tft_and_lol_detection_supports_live_pbe_and_legacy_paths(tmp
     invalid.write_text("settings:\n    locale: [en_US]\n", encoding="utf-8")
 
     assert detect_metadata_file(str(manual)) == [str(path) for path in (lol_live, lol_pbe, tft_live, tft_pbe, manual)]
-    assert detect_metadata_file([str(tft_live), str(invalid)]) == [str(path) for path in (lol_live, lol_pbe, tft_live, tft_pbe)]
-    assert detect_metadata_file([str(tft_live), None, "", 42, str(invalid)], "teamfighttactics") == [
-        str(tft_live), str(tft_pbe),
+    assert detect_metadata_file([str(tft_live), None, "", 42, str(invalid)]) == [
+        str(lol_live), str(lol_pbe), str(tft_live), str(tft_pbe),
     ]
-    assert detect_metadata_file(product="league_of_legends") == [str(lol_live), str(lol_pbe)]
 
 
 def test_detection_preserves_the_other_drive_fallback(tmp_path, riot_metadata, monkeypatch):
@@ -108,7 +106,7 @@ def test_first_manual_selection_is_persisted_and_matches_tft_target(tmp_path, ri
 
     assert verify_metadata_file(config, dialog) == [str(manual)]
     assert config["SettingFile"] == [str(manual)]
-    assert detect_metadata_file(config["SettingFile"], "teamfighttactics") == [str(manual)]
+    assert detect_metadata_file(config["SettingFile"]) == [str(manual)]
 
 
 def test_update_keeps_yaml_comments_and_noops_when_locale_is_already_set(riot_metadata):
@@ -199,8 +197,8 @@ def test_core_modules_do_not_import_gui_frameworks():
         assert not (imports & forbidden), f"{path} imports GUI modules: {imports & forbidden}"
 
 
-def test_entrypoint_uses_qt_ui_not_legacy_tk():
+def test_entrypoint_uses_tk_ui():
     main_source = Path("src/main.py").read_text(encoding="utf-8")
 
-    assert "from ui_qt.app import App" in main_source
-    assert "from ui.app import App" not in main_source
+    assert "from ui.app import App" in main_source
+    assert "from ui_qt.app import App" not in main_source

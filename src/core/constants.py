@@ -13,11 +13,7 @@ GAME_NAMES = {
     "Legends of Runeterra": "bacon",
 }
 
-LANGUAGE_TARGETS = {
-    "": "全部已安装游戏",
-    GAME_NAMES["League of Legends"]: "英雄联盟",
-    GAME_NAMES["Teamfight Tactics"]: "云顶之弈",
-}
+LANGUAGE_PRODUCTS = (GAME_NAMES["League of Legends"], GAME_NAMES["Teamfight Tactics"])
 
 RIOT_DATA_DIR = os.path.join(
     os.environ.get("ProgramData") or os.path.join(os.environ.get("SystemDrive", "C:") + os.sep, "ProgramData"),

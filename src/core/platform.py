@@ -16,6 +16,21 @@ import mouse
 from core.constants import HOST, PORT
 
 
+def get_primary_work_area() -> tuple[int, int, int, int] | None:
+    rect = wintypes.RECT()
+    SPI_GETWORKAREA = 0x0030
+    if ctypes.windll.user32.SystemParametersInfoW(SPI_GETWORKAREA, 0, ctypes.byref(rect), 0):
+        return rect.left, rect.top, rect.right, rect.bottom
+    return None
+
+
+def get_window_size(hwnd: int) -> tuple[int, int] | None:
+    rect = wintypes.RECT()
+    if ctypes.windll.user32.GetWindowRect(wintypes.HWND(hwnd), ctypes.byref(rect)):
+        return rect.right - rect.left, rect.bottom - rect.top
+    return None
+
+
 def get_drives() -> list[str]:
     drives = []
     bitmask = ctypes.windll.kernel32.GetLogicalDrives()
