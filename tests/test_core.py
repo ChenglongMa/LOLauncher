@@ -182,6 +182,7 @@ def test_start_game_falls_back_to_registered_riot_client(tmp_path, mocker):
 def test_version_comparison_uses_numeric_parts():
     assert is_newer_version("v1.10.0", "1.2.9")
     assert not is_newer_version("v1.2.0", "1.2.0")
+    assert not is_newer_version("1.3.0-rc.1", "1.2.2")
 
 
 def test_core_modules_do_not_import_gui_frameworks():

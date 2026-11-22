@@ -35,8 +35,8 @@ class FakeDialog:
         self.messages.append((title, message))
         return bool(self.choices.pop(0)) if self.choices else True
 
-    def choose(self, title, message, choices):
-        self.messages.append((title, message, tuple(choices)))
+    def choose(self, title, message, choices, *, details=""):
+        self.messages.append((title, message, tuple(choices), details))
         return self.choices.pop(0) if self.choices else choices[0]
 
     def input_text(self, title, message, default=""):

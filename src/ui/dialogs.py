@@ -1,16 +1,23 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
+from tkinter.scrolledtext import ScrolledText
 
 
 class ChoiceDialog(simpledialog.Dialog):
-    def __init__(self, parent, title, message, choices):
+    def __init__(self, parent, title, message, choices, details=""):
         self.message = message
         self.choices = choices
+        self.details = details
         super().__init__(parent, title)
 
     def body(self, frame):
         ttk.Label(frame, text=self.message, wraplength=440, justify=tk.LEFT).pack(fill=tk.X, pady=(0, 8))
+        if self.details:
+            notes = ScrolledText(frame, width=58, height=9, wrap=tk.WORD, font="TkDefaultFont")
+            notes.insert("1.0", self.details)
+            notes.configure(state=tk.DISABLED)
+            notes.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
         self.options = tk.Listbox(frame, height=min(8, len(self.choices)), width=58, exportselection=False)
         self.options.insert(tk.END, *self.choices)
         self.options.selection_set(0)
@@ -43,9 +50,9 @@ class TkDialogService:
     def confirm(self, title, message):
         return messagebox.askyesno(title, message, parent=self.parent, default=messagebox.NO)
 
-    def choose(self, title, message, choices):
+    def choose(self, title, message, choices, *, details=""):
         if choices:
-            return ChoiceDialog(self.parent, title, message, choices).result
+            return ChoiceDialog(self.parent, title, message, choices, details).result
         return None
 
     def input_text(self, title, message, default=""):

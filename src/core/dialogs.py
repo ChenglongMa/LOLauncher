@@ -5,7 +5,7 @@ class DialogService(Protocol):
     def confirm(self, title: str, message: str) -> bool:
         ...
 
-    def choose(self, title: str, message: str, choices: Sequence[str]) -> str | None:
+    def choose(self, title: str, message: str, choices: Sequence[str], *, details: str = "") -> str | None:
         ...
 
     def input_text(self, title: str, message: str, default: str = "") -> str | None:
