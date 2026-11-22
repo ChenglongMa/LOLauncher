@@ -4,30 +4,28 @@ VERSION = "1.2.2"
 APP_NAME = "LOLauncher"
 REPO_NAME = "ChenglongMa/LOLauncher"
 
-SUPPORTED_PATCH_LINES = ["live", "pbe"]
-DEFAULT_PATCH_LINE = "live"
-DEFAULT_DRIVE = r"C:"
+SUPPORTED_PATCH_LINES = ("live", "pbe")
 
 GAME_NAMES = {
     "League of Legends": "league_of_legends",
+    "Teamfight Tactics": "teamfighttactics",
     "VALORANT": "valorant",
     "Legends of Runeterra": "bacon",
 }
 
-METADATA_DIR_FORMAT = r"{drive}\ProgramData\Riot Games\Metadata\{game_name}.{patch_line}"
-METADATA_FILE_FORMAT = "{game_name}.{patch_line}.product_settings.yaml"
-DEFAULT_METADATA_DIR = METADATA_DIR_FORMAT.format(
-    drive=DEFAULT_DRIVE,
-    game_name=GAME_NAMES["League of Legends"],
-    patch_line=DEFAULT_PATCH_LINE,
+LANGUAGE_TARGETS = {
+    "": "全部已安装游戏",
+    GAME_NAMES["League of Legends"]: "英雄联盟",
+    GAME_NAMES["Teamfight Tactics"]: "云顶之弈",
+}
+
+RIOT_DATA_DIR = os.path.join(
+    os.environ.get("ProgramData") or os.path.join(os.environ.get("SystemDrive", "C:") + os.sep, "ProgramData"),
+    "Riot Games",
 )
-DEFAULT_METADATA_FILE = os.path.join(
-    DEFAULT_METADATA_DIR,
-    METADATA_FILE_FORMAT.format(
-        game_name=GAME_NAMES["League of Legends"],
-        patch_line=DEFAULT_PATCH_LINE,
-    ),
-)
+DEFAULT_METADATA_DIR = os.path.join(RIOT_DATA_DIR, "Metadata")
+METADATA_RELATIVE_DIR = os.path.join("ProgramData", "Riot Games", "Metadata")
+PRODUCT_SETTINGS_SUFFIX = ".product_settings.yaml"
 
 LOCALE_CODES = {
     "zh_CN": "简体中文（国服）",

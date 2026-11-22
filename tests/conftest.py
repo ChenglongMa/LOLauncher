@@ -2,12 +2,29 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
+
+
+@pytest.fixture
+def riot_metadata(tmp_path, monkeypatch):
+    metadata = tmp_path / "Metadata"
+    monkeypatch.setattr("core.config.DEFAULT_METADATA_DIR", str(metadata))
+    monkeypatch.setattr("core.config.get_drives", lambda: [])
+
+    def write_settings(installation):
+        path = metadata / installation / f"{installation}.product_settings.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('settings:\n    locale: "en_US"  # Riot language\n    other_setting: true\n', encoding="utf-8")
+        return path
+
+    return write_settings
 
 
 class FakeDialog:

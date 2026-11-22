@@ -1,5 +1,8 @@
-from PySide6.QtCore import Qt
+import stat
 
+from PySide6.QtCore import QEventLoop, Qt, QTimer
+
+from core.config import read_yaml
 from core.constants import LOCALE_CODES
 from ui_qt.app import App
 from conftest import FakeDialog
@@ -91,4 +94,59 @@ def test_request_show_emits_to_main_thread(qtbot, tmp_path):
 
     assert app.window.windowState() & Qt.WindowMinimized == Qt.WindowState(0)
 
+    app.shutdown()
+
+
+def test_launching_for_tft_keeps_lol_unchanged_and_restarts_watchers(qtbot, tmp_path, riot_metadata, mocker):
+    lol = riot_metadata("league_of_legends.live")
+    app = make_app(tmp_path, config={"Locale": "zh_CN"})
+    qtbot.addWidget(app.window)
+    assert app.target_combo.currentData() == ""
+    app.target_combo.setCurrentIndex(app.target_combo.findData("teamfighttactics"))
+    tft_live = riot_metadata("teamfighttactics.live")
+    tft_pbe = riot_metadata("teamfighttactics.pbe")
+    tft_pbe.chmod(stat.S_IREAD)
+    first, second = mocker.Mock(), mocker.Mock()
+    mocker.patch("ui_qt.app.Observer", side_effect=[first, second])
+    launch = mocker.patch("ui_qt.app.start_game", return_value=None)
+    minimize = mocker.patch.object(app, "minimize_window")
+
+    try:
+        app.launch_button.click()
+        app.launch_button.click()
+
+        assert read_yaml(lol)["settings"]["locale"] == "en_US"
+        assert read_yaml(tft_pbe)["settings"]["locale"] == "en_US"
+        assert read_yaml(tft_live)["settings"]["locale"] == "zh_CN"
+        assert launch.call_count == 2
+        first.stop.assert_called_once()
+        first.join.assert_called_once()
+        assert second.schedule.call_args.kwargs["path"] == str(tft_live.parent)
+        assert "1 个成功，1 个失败" in app.window.statusBar().currentMessage()
+        assert "请手动打开 Riot Client" in app.window.statusBar().currentMessage()
+        minimize.assert_not_called()
+    finally:
+        tft_pbe.chmod(stat.S_IREAD | stat.S_IWRITE)
+        app.shutdown()
+
+    assert app.config["LanguageTarget"] == "teamfighttactics"
+    assert app.config["SettingFile"] == []
+
+
+def test_automatic_start_runs_during_qt_event_loop(qtbot, tmp_path, mocker):
+    app = make_app(tmp_path, config={"StartGameDirectly": True})
+    qtbot.addWidget(app.window)
+    loop = QEventLoop()
+    ran_during_event_loop = []
+
+    def start():
+        ran_during_event_loop.append(loop.isRunning())
+        loop.quit()
+
+    mocker.patch.object(app.qt_app, "exec", side_effect=loop.exec)
+    mocker.patch.object(app, "start", side_effect=start)
+    QTimer.singleShot(250, loop.quit)
+    app.run()
+
+    assert ran_during_event_loop == [True]
     app.shutdown()

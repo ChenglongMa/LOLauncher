@@ -15,7 +15,7 @@
 
 # 英雄联盟，启动！
 
-* 该程序用于修改英雄联盟的文本语言，比如 **简体中文(国服)**，这样游戏文本语言为**国服翻译**，语音为**国服语音**。
+* 该程序用于修改英雄联盟和独立版云顶之弈的语言，例如 **简体中文（国服）**。
 * 自 [v1.1.0](https://github.com/ChenglongMa/LOLauncher/releases/tag/1.1.0) 版本后，该程序新增 **一键喊话**。
 * 该程序**目前**在 Windows 系统下测试通过。MacOS 版本正在开发中。
 * 该程序目前适用于英雄联盟的14.9版本，特别是 [Riot Vanguard](https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-9-notes/#patch-vanguard) 发布后，以前的修改语言的方法已经失效。
@@ -107,11 +107,11 @@ uv run python src/main.py
 
 ### 1. 修改游戏语言
 
-如 [程序界面](#程序界面) 所示，启动游戏前，您可以选择游戏的语言。
+在 **语言设置** 中选择 **英雄联盟**、**云顶之弈** 或 **全部已安装游戏**，再选择语言并点击 **应用语言并启动**。程序会更新所选游戏已检测到的正式服和 PBE 配置。打开 Riot Client 后，从客户端进入要玩的游戏。
 
 > [!NOTE]
 > 
-> 只有**简体中文（国服）** 是带有语音的，其他语言只有文本。
+> 英雄联盟的**简体中文（国服）**支持国服语音。云顶之弈的语音取决于对应版本提供的语言资源。
 > 
 
 ### 2. 一键喊话
@@ -139,7 +139,7 @@ uv run python src/main.py
 }
 ```
 
-- `SettingFile`：英雄联盟的 `league_of_legends.live.product_settings.yaml` 配置文件路径。
+- `SettingFile`：可填写单个 Riot `product_settings.yaml` 路径或路径列表，用于补充自动检测。同一文件只处理一次。选择单个游戏时，手动文件需要保留原始文件名，例如 `teamfighttactics.live.product_settings.yaml`。
 - `GameClient`：Riot 客户端<img src="./docs/lol_client.ico" alt="Riot 客户端 icon" width="40px">的 `RiotClientServices.exe` 文件路径。
 - `Locale`：游戏语言，例如 `zh_CN` 为中文，`en_US` 为英文。
 - **注意：路径中的 `\` 需要替换为 `\\`，或者使用 `/` （请参考以上示例）。**

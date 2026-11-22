@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtCore import QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QCloseEvent, QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -33,6 +33,7 @@ from core.constants import (
     APP_NAME,
     CONFIG_FILENAME,
     GUI_CONFIG_FILENAME,
+    LANGUAGE_TARGETS,
     LOCALE_CODES,
     QUICK_CHAT_DOC,
     QUICK_CHAT_FILENAME,
@@ -88,7 +89,7 @@ class MainWindow(QMainWindow):
         self.minimize_on_close_action.toggled.connect(self.app.set_minimize_on_closing)
         setting_menu.addAction(self.minimize_on_close_action)
 
-        self.start_directly_action = QAction("下次直接启动游戏", self)
+        self.start_directly_action = QAction("下次自动应用语言并启动", self)
         self.start_directly_action.setCheckable(True)
         self.start_directly_action.setChecked(self.app.start_game_directly)
         self.start_directly_action.toggled.connect(self.app.set_start_game_directly)
@@ -111,7 +112,7 @@ class MainWindow(QMainWindow):
 
         title = QLabel("LOLauncher", root)
         title.setObjectName("TitleLabel")
-        subtitle = QLabel("英雄联盟语言与一键喊话工具", root)
+        subtitle = QLabel("游戏语言与英雄联盟一键喊话", root)
         subtitle.setObjectName("SubtitleLabel")
         layout.addWidget(title)
         layout.addWidget(subtitle)
@@ -124,7 +125,7 @@ class MainWindow(QMainWindow):
 
         launch_row = QHBoxLayout()
         launch_row.addStretch(1)
-        self.app.launch_button = PrimaryPushButton("英雄联盟，启动！", root)
+        self.app.launch_button = PrimaryPushButton("应用语言并启动", root)
         self.app.launch_button.setIcon(QIcon(get_asset("button_icon.png")))
         self.app.launch_button.clicked.connect(self.app.start)
         self.app.launch_button.setMinimumHeight(52)
@@ -136,11 +137,29 @@ class MainWindow(QMainWindow):
     def create_locale_group(self, parent: QWidget) -> QWidget:
         group = QGroupBox("语言设置", parent)
         layout = QVBoxLayout(group)
+
+        target_row = QHBoxLayout()
+        target_label = QLabel("游戏", group)
+        self.app.target_combo = ComboBox(group)
+        target_label.setBuddy(self.app.target_combo)
+        for target, label in LANGUAGE_TARGETS.items():
+            self.app.target_combo.addItem(label, userData=target)
+        self.app.target_combo.setCurrentIndex(self.app.target_combo.findData(self.app.language_target))
+        self.app.target_combo.currentIndexChanged.connect(self.app.on_language_target_changed)
+        target_row.addWidget(target_label)
+        target_row.addWidget(self.app.target_combo, stretch=1)
+        layout.addLayout(target_row)
+
+        locale_row = QHBoxLayout()
+        locale_label = QLabel("语言", group)
         self.app.locale_combo = ComboBox(group)
+        locale_label.setBuddy(self.app.locale_combo)
         self.app.locale_combo.addItems(list(self.app.locale_dict.keys()))
         self.app.locale_combo.setCurrentText(LOCALE_CODES[self.app.selected_locale])
         self.app.locale_combo.currentTextChanged.connect(self.app.on_locale_changed)
-        layout.addWidget(self.app.locale_combo)
+        locale_row.addWidget(locale_label)
+        locale_row.addWidget(self.app.locale_combo, stretch=1)
+        layout.addLayout(locale_row)
         return group
 
     def create_quick_chat_group(self, parent: QWidget) -> QWidget:
@@ -250,6 +269,8 @@ class App(QObject):
         self.selected_locale = config.get("Locale", "zh_CN")
         if self.selected_locale not in LOCALE_CODES:
             self.selected_locale = "zh_CN"
+        target = config.get("LanguageTarget", "")
+        self.language_target = target if isinstance(target, str) and target in LANGUAGE_TARGETS else ""
         self.game_client = config.get("GameClient", "")
         self.theme = gui_config.get("Theme", "light")
         self.minimize_on_closing = bool(config.get("MinimizeOnClosing", True))
@@ -314,10 +335,9 @@ class App(QObject):
     def run(self) -> int:
         assert self.window is not None
         self.window.show()
-        result = self.qt_app.exec()
         if self.start_game_directly:
-            self.start()
-        return result
+            QTimer.singleShot(0, self.start)
+        return self.qt_app.exec()
 
     def update_status(self, message: str) -> None:
         if self.window is not None:
@@ -386,6 +406,9 @@ class App(QObject):
         self.selected_locale = self.locale_dict[text]
         self.update_status(f"语言将被设置为：{text}")
 
+    def on_language_target_changed(self, index: int) -> None:
+        self.language_target = self.target_combo.itemData(index)
+
     def on_shortcut_changed(self, text: str) -> None:
         self.quick_chat_shortcut = text
         self.update_status(f"快捷键将被设置为：{text}")
@@ -409,28 +432,22 @@ class App(QObject):
             self.update_status(f"进程名称已设置为：{process_name}")
 
     def detect_metadata_file(self) -> None:
-        if not self.dialog.confirm("提示", "您确定要重新检测以修改已有配置？"):
-            return
-        setting_files = detect_metadata_file()
-        if setting_files:
-            self.setting_files = setting_files
-            self.sync_config()
-            msg = "游戏配置文件已更新"
+        self.setting_files = detect_metadata_file(self.config.get("SettingFile"), self.language_target)
+        if self.setting_files:
+            msg = f"找到 {len(self.setting_files)} 个有效的游戏配置文件"
         else:
-            msg = "未找到有效配置，将继续使用之前的配置"
+            msg = "未找到所选游戏的配置文件，请检查安装或手动选择配置文件"
         self.update_status(msg)
         self.dialog.info("提示", msg)
 
     def choose_metadata_file(self) -> None:
-        if not self.dialog.confirm("提示", "已自动检测到游戏配置文件，您确定要手动选择吗？"):
-            return
-        selected_file = open_metadata_file_dialog(self.dialog, "请选择 league_of_legends.live.product_settings.yaml 文件")
+        selected_file = open_metadata_file_dialog(self.dialog)
         if selected_file:
-            self.setting_files = [selected_file]
+            self.config["SettingFile"] = [selected_file]
             self.sync_config()
-            msg = "游戏配置文件已更新"
+            msg = "已保存手动选择的配置文件"
         else:
-            msg = "未找到有效配置，将继续使用之前的配置"
+            msg = "未选择有效的游戏配置文件"
         self.update_status(msg)
         self.dialog.info("提示", msg)
 
@@ -451,35 +468,60 @@ class App(QObject):
 
     def start(self) -> None:
         self.update_status("正在更新配置文件...")
+        self.setting_files = detect_metadata_file(self.config.get("SettingFile"), self.language_target)
+        if not self.setting_files:
+            msg = "未找到所选游戏的配置文件，请检查安装或手动选择配置文件"
+            self.update_status(msg)
+            self.dialog.error("错误", msg)
+            return
+
+        self.stop_observers()
         settings = []
+        applied_files = []
         for setting_file in self.setting_files:
-            setting = update_settings(setting_file, self.selected_locale, msg_callback_fn=self.update_status)
-            if setting:
+            setting = update_settings(setting_file, self.selected_locale)
+            if setting is not None:
                 settings.append(setting)
+                applied_files.append(setting_file)
 
+        failed_count = len(self.setting_files) - len(applied_files)
+        summary = f"语言设置：{len(applied_files)} 个成功，{failed_count} 个失败"
         if not settings:
-            self.dialog.error("错误", "配置文件更新失败，无法启动游戏。")
+            self.update_status(summary)
+            self.dialog.error("错误", "配置文件更新失败，请检查文件是否为只读或正在被占用。")
             return
 
-        self.start_observers()
-        self.update_status("正在启动游戏...")
-        selected_client = start_game(self.game_client, tuple(settings), self.dialog)
-        if not selected_client:
-            self.update_status("未找到 RiotClientServices.exe，请手动启动游戏。")
-            return
-        self.game_client = os.path.normpath(selected_client)
-        self.update_status("英雄联盟，启动！")
-        self.minimize_window(force=True)
+        watch_failures = self.start_observers(applied_files)
+        try:
+            selected_client = start_game(self.game_client, tuple(settings), self.dialog)
+        except OSError as error:
+            print(f"无法打开 Riot Client: {error}")
+            selected_client = None
 
-    def start_observers(self) -> None:
-        event_handler = FileWatcher(*self.setting_files, selected_locale=self.selected_locale)
-        unique_dirs = set(os.path.dirname(file) for file in self.setting_files)
-        for directory in unique_dirs:
+        if watch_failures:
+            summary += f"。{watch_failures} 个目录监听失败"
+        if selected_client:
+            self.game_client = selected_client
+        else:
+            summary += "。请手动打开 Riot Client"
+        self.update_status(summary)
+        if selected_client and not (failed_count or watch_failures):
+            self.minimize_window(force=True)
+
+    def start_observers(self, setting_files: list[str]) -> int:
+        event_handler = FileWatcher(*setting_files, selected_locale=self.selected_locale)
+        failures = 0
+        for directory in dict.fromkeys(os.path.dirname(file) for file in setting_files):
             observer = Observer()
-            observer.schedule(event_handler, path=directory, recursive=False)
-            observer.start()
-            self.observers.append(observer)
-        print("Start Watching...")
+            try:
+                observer.schedule(event_handler, path=directory, recursive=False)
+                observer.start()
+            except OSError as error:
+                print(f"无法监听配置目录 {directory}: {error}")
+                failures += 1
+            else:
+                self.observers.append(observer)
+        return failures
 
     def stop_observers(self) -> None:
         print("Stopping observer...")
@@ -493,9 +535,10 @@ class App(QObject):
     def sync_config(self) -> None:
         config = build_app_config(
             existing_config=self.config,
-            setting_files=self.setting_files,
+            setting_files=self.config.get("SettingFile", []),
             game_client=self.game_client,
             selected_locale=self.selected_locale,
+            language_target=self.language_target,
             minimize_on_closing=self.minimize_on_closing,
             start_game_directly=self.start_game_directly,
             quick_chat_enabled=self.quick_chat_enabled,
